@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Usuarios - Sistema Interno</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .users-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .users-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color, #334155);
+        }
+
+        .users-header h1 {
+            color: var(--text-primary, #f1f5f9);
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary, #1e293b);
+            color: var(--text-primary, #f1f5f9);
+            border: 1px solid var(--border-color, #334155);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-hover, #334155);
+        }
+
+        .users-table-container {
+            background: var(--bg-secondary, #1e293b);
+            border-radius: 12px;
+            border: 1px solid var(--border-color, #334155);
+            overflow: hidden;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table thead {
+            background: var(--bg-primary, #0f172a);
+        }
+
+        .users-table th {
+            padding: 16px;
+            text-align: left;
+            color: var(--text-primary, #f1f5f9);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .users-table td {
+            padding: 16px;
+            color: var(--text-primary, #f1f5f9);
+            border-top: 1px solid var(--border-color, #334155);
+        }
+
+        .users-table tbody tr:hover {
+            background: var(--bg-hover, #334155);
+        }
+
+        .user-email {
+            font-weight: 500;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary, #1e293b);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid var(--border-color, #334155);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: var(--text-primary, #f1f5f9);
+            margin-bottom: 8px;
+        }
+
+        .modal-header p {
+            color: var(--text-secondary, #94a3b8);
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-primary, #f1f5f9);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-primary, #0f172a);
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 8px;
+            color: var(--text-primary, #f1f5f9);
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-500, #3b82f6);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .error-message {
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            color: #fca5a5;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            padding: 12px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            color: #6ee7b7;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary, #94a3b8);
+        }
+    </style>
+</head>
+<body>
+    <div class="users-container">
+        <div class="users-header">
+            <h1><i class="fas fa-users"></i> Gestión de Usuarios</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                    <i class="fas fa-arrow-left"></i> Volver
+                </button>
+                <button class="btn btn-primary" onclick="openAddUserModal()">
+                    <i class="fas fa-plus"></i> Agregar Usuario
+                </button>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+
+        <div class="users-table-container">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Último Acceso</th>
+                        <th>Fecha de Creación</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr>
+                        <td colspan="4" class="loading">
+                            <i class="fas fa-spinner fa-spin"></i> Cargando usuarios...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal para agregar usuario -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Agregar Nuevo Usuario</h2>
+                <p>Ingresa el email y contraseña para el nuevo usuario</p>
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+            <form id="addUserForm">
+                <div class="form-group">
+                    <label for="newUserEmail">Email</label>
+                    <input type="email" id="newUserEmail" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="newUserPassword">Contraseña</label>
+                    <input type="password" id="newUserPassword" required autocomplete="new-password" minlength="6">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-config-universal.js"></script>
+    <script src="auth.js"></script>
+    <script src="roles.js"></script>
+    <script>
+        let supabaseClient = null;
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Verificar autenticación
+            const isAuth = await window.authManager.requireAuth();
+            if (!isAuth) {
+                return;
+            }
+
+            // Verificar acceso a esta página (solo admins)
+            const hasAccess = await window.rolesManager.requireAccess('gestion-usuarios.html');
+            if (!hasAccess) {
+                return;
+            }
+
+            // Inicializar Supabase
+            if (window.universalSupabase) {
+                supabaseClient = await window.universalSupabase.getClient();
+            } else if (typeof supabase !== 'undefined') {
+                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: { persistSession: true }
+                });
+            }
+
+            // Cargar usuarios
+            await loadUsers();
+
+            // Configurar formulario
+            document.getElementById('addUserForm').addEventListener('submit', handleAddUser);
+        });
+
+        // Cargar lista de usuarios
+        async function loadUsers() {
+            try {
+                const { data: { users }, error } = await supabaseClient.auth.admin.listUsers();
+                
+                if (error) throw error;
+
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No hay usuarios registrados</td></tr>';
+                    return;
+                }
+
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    const lastSignIn = user.last_sign_in_at 
+                        ? new Date(user.last_sign_in_at).toLocaleString('es-ES')
+                        : 'Nunca';
+                    const createdAt = user.created_at 
+                        ? new Date(user.created_at).toLocaleString('es-ES')
+                        : '-';
+
+                    row.innerHTML = `
+                        <td class="user-email">${user.email}</td>
+                        <td>${lastSignIn}</td>
+                        <td>${createdAt}</td>
+                        <td>
+                            <div class="user-actions">
+                                <button class="btn-icon btn-delete" onclick="deleteUser('${user.id}', '${user.email}')">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error cargando usuarios:', error);
+                document.getElementById('usersTableBody').innerHTML = 
+                    '<tr><td colspan="4" style="text-align: center; color: #fca5a5;">Error al cargar usuarios</td></tr>';
+            }
+        }
+
+        // Abrir modal de agregar usuario
+        function openAddUserModal() {
+            document.getElementById('addUserModal').classList.add('show');
+            document.getElementById('addUserForm').reset();
+            document.getElementById('errorMessage').classList.remove('show');
+            document.getElementById('successMessage').classList.remove('show');
+        }
+
+        // Cerrar modal
+        function closeAddUserModal() {
+            document.getElementById('addUserModal').classList.remove('show');
+        }
+
+        // Manejar agregar usuario
+        async function handleAddUser(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('newUserEmail').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+
+            errorMsg.classList.remove('show');
+            successMsg.classList.remove('show');
+
+            try {
+                // Nota: Para crear usuarios necesitas usar el Admin API
+                // Esto requiere una service_role key, no la anon key
+                // Por ahora, usaremos signUp que crea usuarios pero requiere confirmación
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                successMsg.textContent = 'Usuario creado exitosamente. El usuario debe confirmar su email.';
+                successMsg.classList.add('show');
+                
+                document.getElementById('addUserForm').reset();
+                
+                setTimeout(() => {
+                    closeAddUserModal();
+                    loadUsers();
+                }, 2000);
+            } catch (error) {
+                errorMsg.textContent = error.message || 'Error al crear usuario';
+                errorMsg.classList.add('show');
+            }
+        }
+
+        // Eliminar usuario
+        async function deleteUser(userId, userEmail) {
+            if (!confirm(`¿Estás seguro de que deseas eliminar al usuario ${userEmail}?`)) {
+                return;
+            }
+
+            try {
+                // Nota: Eliminar usuarios también requiere Admin API
+                // Por ahora mostraremos un mensaje
+                alert('Para eliminar usuarios necesitas configurar el Admin API de Supabase. Consulta la documentación de Supabase Auth Admin API.');
+                // const { error } = await supabaseClient.auth.admin.deleteUser(userId);
+                // if (error) throw error;
+                // await loadUsers();
+            } catch (error) {
+                alert('Error al eliminar usuario: ' + error.message);
+            }
+        }
+
+        // Cerrar sesión
+        async function logout() {
+            const result = await window.authManager.logout();
+            if (result.success) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Cerrar modal al hacer click fuera
+        document.getElementById('addUserModal').addEventListener('click', (e) => {
+            if (e.target.id === 'addUserModal') {
+                closeAddUserModal();
+            }
+        });
+    </script>
+</body>
+</html>
+
