@@ -15,6 +15,7 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="supabase-config-universal.js"></script>
     <script src="translation-system.js"></script>
+    <script src="auth.js"></script>
     <script src="stock-warning.js"></script>
     <style>
         /* Hero Section para Categorías - más compacto */
@@ -538,12 +539,19 @@
 
         // Inicializar idioma y cargar categorías al cargar la página
         document.addEventListener('DOMContentLoaded', async function() {
+            // Verificar autenticación primero
+            const isAuth = await window.authManager.requireAuth('login.html');
+            if (!isAuth) {
+                return; // Redirige a login.html
+            }
+
             const savedLanguage = localStorage.getItem('language') || 'pt';
             changeLanguage(savedLanguage);
             // Asegurar que los botones de navegación se traduzcan
             updateNavigationButtons(savedLanguage);
             
-            // Cargar categorías del home
+            // Inicializar Supabase y cargar categorías del home
+            await initSupabase();
             await loadHomeCategories();
         });
     </script>

@@ -5931,7 +5931,7 @@ const PREDEFINED_COMMERCIALS = [
     'Sergio Serrano',
     'Susana Coutinho',
     'Vasco Morais',
-    'Vera Madeira'
+    'Vera Cruz Madeira'
 ];
 
 /**

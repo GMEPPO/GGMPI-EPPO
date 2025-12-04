@@ -15,6 +15,7 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="supabase-config-universal.js"></script>
     <script src="translation-system.js"></script>
+    <script src="auth.js"></script>
     <script src="stock-warning.js"></script>
     <style>
         .product-form-container {
@@ -1332,6 +1333,12 @@
 
         // Inicializar sistema de traducciones y tema
         document.addEventListener('DOMContentLoaded', async () => {
+            // Verificar autenticación primero
+            const isAuth = await window.authManager.requireAuth('login.html');
+            if (!isAuth) {
+                return; // Redirige a login.html
+            }
+
             // Inicializar tema
             initTheme();
             
