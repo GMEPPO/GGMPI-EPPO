@@ -33,6 +33,34 @@ const categoryFieldsConfig = {
 
 let supabaseClient = null;
 let brandSuggestions = [];
+
+// Colores VACAVALIENTE con sus códigos (5º y 6º dígito de la referencia)
+const VACAVALIENTE_COLORS = [
+    { name: 'Merlot', code: 'B7' },
+    { name: 'Red Clay', code: '25' },
+    { name: 'Pink Sand', code: '13' },
+    { name: 'Sandshell', code: '97' },
+    { name: 'Ginger', code: '56' },
+    { name: 'Cocoa', code: '45' },
+    { name: 'Matone', code: '47' },
+    { name: 'Ash', code: '30' },
+    { name: 'Pumpkin Orange', code: '26' },
+    { name: 'Lemon', code: '10' },
+    { name: 'Lotus Green', code: '24' },
+    { name: 'Pistacchio', code: 'C0' },
+    { name: 'Olive', code: 'B9' },
+    { name: 'Sage Green', code: '64' },
+    { name: 'Eucalyptus', code: '21' },
+    { name: 'Amazonia Green', code: '62' },
+    { name: 'Lichen Blue', code: 'B8' },
+    { name: 'Ocean Blue', code: '08' },
+    { name: 'Tempest Blue', code: '94' },
+    { name: 'Majolica Blue', code: 'A0' },
+    { name: 'Petrol Blue', code: '20' },
+    { name: 'Grafite', code: '36' },
+    { name: 'Black', code: '01' }
+];
+
 let variants = {
     base: {
         name: '',
@@ -799,9 +827,67 @@ async function loadBrandSuggestions() {
         datalist.innerHTML = brandSuggestions.map(b => `<option value="${b}">`).join('');
         
         // Asignar datalist al campo de marca
-        document.getElementById('marca').setAttribute('list', 'marcas');
+        const marcaField = document.getElementById('marca');
+        if (marcaField) {
+            marcaField.setAttribute('list', 'marcas');
+            // Agregar listener para actualizar variantes cuando cambie la marca
+            marcaField.addEventListener('change', function() {
+                updateVariantesReferenciasForBrand();
+            });
+            marcaField.addEventListener('input', function() {
+                updateVariantesReferenciasForBrand();
+            });
+        }
   } catch (error) {
         console.error('Error cargando marcas:', error);
+    }
+}
+
+/**
+ * Actualizar variantes de referencia cuando cambia la marca
+ */
+function updateVariantesReferenciasForBrand() {
+    const container = document.getElementById('variantesReferenciasContainer');
+    if (!container) return;
+    
+    const marcaField = document.getElementById('marca');
+    const isVacavaliente = marcaField && marcaField.value && marcaField.value.toUpperCase().trim() === 'VACAVALIENTE';
+    
+    if (isVacavaliente) {
+        // Si cambia a VACAVALIENTE, verificar si hay referencia base y generar todas las variantes
+        const baseRef = getVacavalienteBaseReference();
+        if (baseRef && baseRef.length >= 6) {
+            // Si hay referencia base válida, generar todas las variantes automáticamente
+            generateAllVacavalienteVariants();
+        } else {
+            // Si no hay referencia base, limpiar y mostrar solo el campo de referencia base
+            container.innerHTML = '';
+            const t = productFormTranslations[localStorage.getItem('language') || 'pt'] || productFormTranslations.pt;
+            const baseRefHtml = `
+                <div style="grid-column: 1 / -1; margin-bottom: 15px; padding: 10px; background: var(--bg-gray-100); border-radius: 6px; border: 1px solid var(--bg-gray-200);">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-primary);">
+                        Referencia Base (VACAVALIENTE)
+                    </label>
+                    <input type="text" 
+                           class="vacavaliente-base-ref-input" 
+                           placeholder="Ej. MT080022" 
+                           value="" 
+                           style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);"
+                           oninput="generateAllVacavalienteVariants()">
+                    <small style="display: block; margin-top: 5px; color: var(--text-secondary);">
+                        Los dígitos 5 y 6 se reemplazarán automáticamente según el color. Se crearán automáticamente todas las variantes para cada color disponible.
+                    </small>
+                </div>
+            `;
+            container.innerHTML = baseRefHtml;
+        }
+    } else {
+        // Si cambia de VACAVALIENTE a otra marca, mantener las variantes existentes pero en formato normal
+        const existingVariantes = getVariantesReferencias();
+        container.innerHTML = '';
+        existingVariantes.forEach(variante => {
+            addVarianteReferencia(variante);
+        });
     }
 }
 
@@ -1436,6 +1522,19 @@ function renderVariants() {
                         <i class="fas fa-trash"></i> Eliminar Variante
                     </button>
                 </div>
+                <div style="margin: 15px 0;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-primary, #111827);">
+                        Plazo de Entrega (si hay stock y solo falta personalizar):
+                    </label>
+                    <input type="text" 
+                           placeholder="Ej: 5-7 días, 1 semana" 
+                           value="${variant.plazo_entrega_personalizado || ''}" 
+                           onchange="variants['${variantId}'].plazo_entrega_personalizado = this.value"
+                           style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                    <small style="display: block; margin-top: 5px; color: #6b7280; font-size: 0.875rem;">
+                        Plazo cuando hay stock y solo falta estampar/personalizar el producto
+                    </small>
+                </div>
                 <div id="${variantId}PriceTiers" class="price-tiers-container">
                     ${renderPriceTiersForVariant(variantId)}
                 </div>
@@ -1472,7 +1571,7 @@ function renderPriceTiersForVariant(variantId) {
 
 function addPriceTier(variantId) {
     if (!variants[variantId]) {
-        variants[variantId] = { name: '', tiers: [] };
+        variants[variantId] = { name: '', tiers: [], plazo_entrega_personalizado: '' };
     }
     if (!variants[variantId].tiers) {
         variants[variantId].tiers = [];
@@ -1489,10 +1588,57 @@ function removePriceTier(variantId, index) {
 }
 
 function addVariant() {
+    // Obtener todas las variantes personalizadas (excluyendo 'base')
+    const existingVariants = Object.keys(variants).filter(id => id !== 'base');
+    
+    // Preguntar si quiere copiar escalones cuando hay al menos una variante existente
+    // (funciona para segunda, tercera, cuarta, etc.)
+    if (existingVariants.length > 0) {
+        const firstVariantId = existingVariants[0];
+        const firstVariant = variants[firstVariantId];
+        
+        // Verificar que la primera variante tenga escalones con cantidades definidas
+        if (firstVariant && firstVariant.tiers && firstVariant.tiers.length > 0) {
+            const hasDefinedTiers = firstVariant.tiers.some(tier => 
+                (tier.minQty && tier.minQty !== '') || (tier.maxQty && tier.maxQty !== '')
+            );
+            
+            if (hasDefinedTiers) {
+                const currentLang = localStorage.getItem('language') || 'pt';
+                
+                const message = currentLang === 'es' ? 
+                    '¿Deseas usar los mismos escalones de cantidad que la primera variante personalizada? (Solo necesitarás cambiar los precios)' :
+                    currentLang === 'pt' ?
+                    'Deseja usar os mesmos escalões de quantidade da primeira variante personalizada? (Apenas precisará alterar os preços)' :
+                    'Do you want to use the same quantity tiers as the first custom variant? (You will only need to change the prices)';
+                
+                if (confirm(message)) {
+                    // Copiar los escalones (minQty, maxQty) pero dejar los precios vacíos
+                    const copiedTiers = firstVariant.tiers.map(tier => ({
+                        minQty: tier.minQty || '',
+                        maxQty: tier.maxQty || '',
+                        price: '' // Dejar precio vacío para que el usuario lo complete
+                    }));
+                    
     const variantId = 'variant_' + (++variantCounter);
     variants[variantId] = {
         name: '',
-        tiers: [{ minQty: '', maxQty: '', price: '' }]
+                        tiers: copiedTiers,
+                        plazo_entrega_personalizado: ''
+                    };
+                    renderVariants();
+                    return;
+                }
+            }
+        }
+    }
+    
+    // Si no hay variantes anteriores, el usuario decidió no copiar, o la primera no tiene escalones definidos, crear variante vacía
+    const variantId = 'variant_' + (++variantCounter);
+    variants[variantId] = {
+        name: '',
+        tiers: [{ minQty: '', maxQty: '', price: '' }],
+        plazo_entrega_personalizado: ''
     };
     renderVariants();
 }
@@ -1521,15 +1667,16 @@ function resetForm(skipConfirm = false) {
         return;
     }
     
-    document.getElementById('productForm').reset();
-    variants = {
-        base: {
-            name: '',
-            tiers: [{ minQty: '', maxQty: '', price: '' }]
-        }
-    };
-    variantCounter = 0;
-    renderVariants();
+        document.getElementById('productForm').reset();
+        variants = {
+            base: {
+                name: '',
+            tiers: [{ minQty: '', maxQty: '', price: '' }],
+            plazo_entrega_personalizado: ''
+            }
+        };
+        variantCounter = 0;
+        renderVariants();
     const categoryFieldsDiv = document.getElementById('categoryFields');
     if (categoryFieldsDiv) {
         categoryFieldsDiv.innerHTML = '<p style="color: #6b7280;">Selecciona una categoría para ver los campos específicos</p>';
@@ -1550,12 +1697,30 @@ function getVariantesReferencias() {
     const container = document.getElementById('variantesReferenciasContainer');
     if (!container) return [];
     
+    // Verificar si la marca es VACAVALIENTE
+    const marcaField = document.getElementById('marca');
+    const isVacavaliente = marcaField && marcaField.value && marcaField.value.toUpperCase().trim() === 'VACAVALIENTE';
+    
     const variantes = [];
     const varianteElements = container.querySelectorAll('.variante-referencia-item');
     
     varianteElements.forEach(element => {
         const referencia = element.querySelector('.variante-referencia-input')?.value?.trim();
-        const color = element.querySelector('.variante-color-input')?.value?.trim();
+        
+        let color = null;
+        if (isVacavaliente) {
+            // Para VACAVALIENTE, obtener el nombre del color del select
+            const colorSelect = element.querySelector('.vacavaliente-color-select');
+            if (colorSelect && colorSelect.value) {
+                const colorCode = colorSelect.value;
+                const colorObj = VACAVALIENTE_COLORS.find(c => c.code === colorCode);
+                color = colorObj ? colorObj.name : null;
+            }
+        } else {
+            // Modo normal: obtener del input de texto
+            color = element.querySelector('.variante-color-input')?.value?.trim() || null;
+        }
+        
         const descripcion = element.querySelector('.variante-descripcion-input')?.value?.trim();
         
         if (referencia) {
@@ -1579,6 +1744,42 @@ function getZonasProducto() {
 }
 
 /**
+ * Generar referencia VACAVALIENTE basada en referencia base y código de color
+ */
+function generateVacavalienteReference(baseRef, colorCode) {
+    if (!baseRef || !colorCode || baseRef.length < 6) {
+        return baseRef;
+    }
+    // Reemplazar los dígitos 5 y 6 (índices 4 y 5) con el código del color
+    const refArray = baseRef.split('');
+    refArray[4] = colorCode[0] || refArray[4];
+    refArray[5] = colorCode[1] || refArray[5];
+    return refArray.join('');
+}
+
+/**
+ * Obtener referencia base de una referencia VACAVALIENTE (si existe)
+ */
+function getVacavalienteBaseReference() {
+    const container = document.getElementById('variantesReferenciasContainer');
+    if (!container) return null;
+    
+    // Buscar el primer input de referencia base VACAVALIENTE
+    const baseRefInput = container.querySelector('.vacavaliente-base-ref-input');
+    if (baseRefInput) {
+        return baseRefInput.value.trim();
+    }
+    
+    // Si no existe, buscar el input temporal (cuando se está cargando)
+    const tempBaseInput = container.querySelector('.temp-vacavaliente-base-ref');
+    if (tempBaseInput) {
+        return tempBaseInput.value.trim();
+    }
+    
+    return null;
+}
+
+/**
  * Agregar una nueva variante de referencia
  */
 function addVarianteReferencia(variante = null) {
@@ -1587,36 +1788,273 @@ function addVarianteReferencia(variante = null) {
     
     const t = productFormTranslations[localStorage.getItem('language') || 'pt'] || productFormTranslations.pt;
     
+    // Verificar si la marca es VACAVALIENTE
+    const marcaField = document.getElementById('marca');
+    const isVacavaliente = marcaField && marcaField.value && marcaField.value.toUpperCase().trim() === 'VACAVALIENTE';
+    
     const varianteId = Date.now();
     const varianteItem = document.createElement('div');
     varianteItem.className = 'variante-referencia-item';
     varianteItem.style.cssText = 'background: var(--bg-white); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--bg-gray-200);';
     varianteItem.dataset.varianteId = varianteId;
     
-    varianteItem.innerHTML = `
-        <div style="display: grid; grid-template-columns: 2fr 2fr 3fr auto; gap: 10px; align-items: end;">
-            <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.reference}</label>
-                <input type="text" class="variante-referencia-input" placeholder="${t.placeholderReference}" value="${variante?.referencia || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);">
+    if (isVacavaliente) {
+        // Modo VACAVALIENTE: referencia base + selector de colores
+        const baseRef = getVacavalienteBaseReference() || '';
+        const colorOptions = VACAVALIENTE_COLORS.map(color => 
+            `<option value="${color.code}" ${variante?.color === color.name ? 'selected' : ''}>${color.name}</option>`
+        ).join('');
+        
+        // Si es la primera variante, mostrar campo de referencia base
+        const isFirstVariant = container.querySelectorAll('.variante-referencia-item').length === 0;
+        const baseRefHtml = isFirstVariant ? `
+            <div style="grid-column: 1 / -1; margin-bottom: 15px; padding: 10px; background: var(--bg-gray-100); border-radius: 6px; border: 1px solid var(--bg-gray-200);">
+                <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-primary);">
+                    Referencia Base (VACAVALIENTE)
+                </label>
+                <input type="text" 
+                       class="vacavaliente-base-ref-input" 
+                       placeholder="Ej. MT080022" 
+                       value="${baseRef}" 
+                       style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);"
+                       oninput="generateAllVacavalienteVariants()">
+                <small style="display: block; margin-top: 5px; color: var(--text-secondary);">
+                    Los dígitos 5 y 6 se reemplazarán automáticamente según el color. Se crearán automáticamente todas las variantes para cada color disponible.
+                </small>
             </div>
-            <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.color}</label>
-                <input type="text" class="variante-color-input" placeholder="${t.placeholderColor}" value="${variante?.color || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);">
+        ` : '';
+        
+        // Determinar referencia generada
+        let generatedRef = '';
+        if (variante && variante.referencia) {
+            generatedRef = variante.referencia;
+        } else if (baseRef && variante && variante.color) {
+            const selectedColor = VACAVALIENTE_COLORS.find(c => c.name === variante.color);
+            if (selectedColor) {
+                generatedRef = generateVacavalienteReference(baseRef, selectedColor.code);
+            }
+        }
+        
+        varianteItem.innerHTML = `
+            ${baseRefHtml}
+            <div style="display: grid; grid-template-columns: 2fr 2fr 3fr auto; gap: 10px; align-items: end;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.reference}</label>
+                    <input type="text" 
+                           class="variante-referencia-input" 
+                           placeholder="Se genera automáticamente" 
+                           value="${generatedRef}" 
+                           readonly
+                           style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-gray-50); cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.color}</label>
+                    <select class="variante-color-input vacavaliente-color-select" 
+                            style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);"
+                            onchange="updateVacavalienteReferenceForItem(this, ${varianteId})">
+                        <option value="">Selecciona un color...</option>
+                        ${colorOptions}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.description}</label>
+                    <input type="text" 
+                           class="variante-descripcion-input" 
+                           placeholder="${t.placeholderVariantDesc}" 
+                           value="${variante?.descripcion || ''}" 
+                           style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);">
+                </div>
+                <div>
+                    <button type="button" onclick="removeVarianteReferencia(${varianteId})" style="padding: 8px 12px; background: linear-gradient(135deg, var(--danger-500) 0%, #dc2626 100%); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
-            <div>
-                <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.description}</label>
-                <input type="text" class="variante-descripcion-input" placeholder="${t.placeholderVariantDesc}" value="${variante?.descripcion || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);">
+        `;
+    } else {
+        // Modo normal: campos manuales
+        varianteItem.innerHTML = `
+            <div style="display: grid; grid-template-columns: 2fr 2fr 3fr auto; gap: 10px; align-items: end;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.reference}</label>
+                    <input type="text" class="variante-referencia-input" placeholder="${t.placeholderReference}" value="${variante?.referencia || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.color}</label>
+                    <input type="text" class="variante-color-input" placeholder="${t.placeholderColor}" value="${variante?.color || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.description}</label>
+                    <input type="text" class="variante-descripcion-input" placeholder="${t.placeholderVariantDesc}" value="${variante?.descripcion || ''}" style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);">
+                </div>
+                <div>
+                    <button type="button" onclick="removeVarianteReferencia(${varianteId})" style="padding: 8px 12px; background: linear-gradient(135deg, var(--danger-500) 0%, #dc2626 100%); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
-            <div>
-                <button type="button" onclick="removeVarianteReferencia(${varianteId})" style="padding: 8px 12px; background: linear-gradient(135deg, var(--danger-500) 0%, #dc2626 100%); color: white; border: none; border-radius: 6px; cursor: pointer;">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-    `;
+        `;
+    }
     
     container.appendChild(varianteItem);
 }
+
+/**
+ * Actualizar referencia VACAVALIENTE para un item específico
+ */
+function updateVacavalienteReferenceForItem(selectElement, varianteId) {
+    const baseRef = getVacavalienteBaseReference();
+    if (!baseRef) {
+        alert('Por favor, ingresa primero la referencia base');
+        return;
+    }
+    
+    const colorCode = selectElement.value;
+    if (!colorCode) {
+        return;
+    }
+    
+    const colorName = VACAVALIENTE_COLORS.find(c => c.code === colorCode)?.name || '';
+    const generatedRef = generateVacavalienteReference(baseRef, colorCode);
+    
+    const item = document.querySelector(`.variante-referencia-item[data-variante-id="${varianteId}"]`);
+    if (item) {
+        const refInput = item.querySelector('.variante-referencia-input');
+        if (refInput) {
+            refInput.value = generatedRef;
+        }
+        // Actualizar también el nombre del color en el select (guardar el nombre, no el código)
+        selectElement.setAttribute('data-color-name', colorName);
+    }
+}
+
+/**
+ * Generar automáticamente todas las variantes VACAVALIENTE para todos los colores disponibles
+ */
+function generateAllVacavalienteVariants() {
+    const container = document.getElementById('variantesReferenciasContainer');
+    if (!container) return;
+    
+    const baseRef = getVacavalienteBaseReference();
+    if (!baseRef || baseRef.length < 6) {
+        // Si no hay referencia base válida, limpiar todas las variantes excepto la primera
+        const varianteItems = container.querySelectorAll('.variante-referencia-item');
+        if (varianteItems.length > 1) {
+            // Eliminar todas excepto la primera
+            for (let i = 1; i < varianteItems.length; i++) {
+                varianteItems[i].remove();
+            }
+        }
+        return;
+    }
+    
+    // Limpiar todas las variantes existentes (excepto el campo de referencia base)
+    container.innerHTML = '';
+    
+    // Crear el campo de referencia base
+    const baseRefHtml = `
+        <div style="grid-column: 1 / -1; margin-bottom: 15px; padding: 10px; background: var(--bg-gray-100); border-radius: 6px; border: 1px solid var(--bg-gray-200);">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: var(--text-primary);">
+                Referencia Base (VACAVALIENTE)
+            </label>
+            <input type="text" 
+                   class="vacavaliente-base-ref-input" 
+                   placeholder="Ej. MT080022" 
+                   value="${baseRef}" 
+                   style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);"
+                   oninput="generateAllVacavalienteVariants()">
+            <small style="display: block; margin-top: 5px; color: var(--text-secondary);">
+                Los dígitos 5 y 6 se reemplazarán automáticamente según el color. Se crearán automáticamente todas las variantes para cada color disponible.
+            </small>
+        </div>
+    `;
+    
+    // Crear una variante para cada color disponible
+    VACAVALIENTE_COLORS.forEach((color, index) => {
+        const generatedRef = generateVacavalienteReference(baseRef, color.code);
+        const varianteId = Date.now() + index;
+        const varianteItem = document.createElement('div');
+        varianteItem.className = 'variante-referencia-item';
+        varianteItem.style.cssText = 'background: var(--bg-white); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--bg-gray-200);';
+        varianteItem.dataset.varianteId = varianteId;
+        
+        const t = productFormTranslations[localStorage.getItem('language') || 'pt'] || productFormTranslations.pt;
+        
+        // Crear opciones de colores con el color actual seleccionado
+        const colorOptions = VACAVALIENTE_COLORS.map(c => 
+            `<option value="${c.code}" ${c.code === color.code ? 'selected' : ''}>${c.name}</option>`
+        ).join('');
+        
+        varianteItem.innerHTML = `
+            ${index === 0 ? baseRefHtml : ''}
+            <div style="display: grid; grid-template-columns: 2fr 2fr 3fr auto; gap: 10px; align-items: end;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.reference}</label>
+                    <input type="text" 
+                           class="variante-referencia-input" 
+                           placeholder="Se genera automáticamente" 
+                           value="${generatedRef}" 
+                           readonly
+                           style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-gray-50); cursor: not-allowed;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.color}</label>
+                    <select class="variante-color-input vacavaliente-color-select" 
+                            style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);"
+                            onchange="updateVacavalienteReferenceForItem(this, ${varianteId})"
+                            data-color-name="${color.name}">
+                        <option value="">Selecciona un color...</option>
+                        ${colorOptions}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-primary);">${t.description}</label>
+                    <input type="text" 
+                           class="variante-descripcion-input" 
+                           placeholder="${t.placeholderVariantDesc}" 
+                           value="" 
+                           style="width: 100%; padding: 8px; border: 1px solid var(--bg-gray-300); border-radius: 6px; color: var(--text-primary); background: var(--bg-white);">
+                </div>
+                <div>
+                    <button type="button" onclick="removeVarianteReferencia(${varianteId})" style="padding: 8px 12px; background: linear-gradient(135deg, var(--danger-500) 0%, #dc2626 100%); color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(varianteItem);
+    });
+}
+
+/**
+ * Actualizar todas las referencias VACAVALIENTE cuando cambia la referencia base
+ */
+function updateVacavalienteReferences() {
+    const container = document.getElementById('variantesReferenciasContainer');
+    if (!container) return;
+    
+    const baseRef = getVacavalienteBaseReference();
+    if (!baseRef) return;
+    
+    const varianteItems = container.querySelectorAll('.variante-referencia-item');
+    varianteItems.forEach(item => {
+        const colorSelect = item.querySelector('.vacavaliente-color-select');
+        if (colorSelect && colorSelect.value) {
+            const colorCode = colorSelect.value;
+            const generatedRef = generateVacavalienteReference(baseRef, colorCode);
+            const refInput = item.querySelector('.variante-referencia-input');
+            if (refInput) {
+                refInput.value = generatedRef;
+            }
+        }
+    });
+}
+
+// Hacer funciones globales
+window.updateVacavalienteReferenceForItem = updateVacavalienteReferenceForItem;
+window.updateVacavalienteReferences = updateVacavalienteReferences;
+window.generateAllVacavalienteVariants = generateAllVacavalienteVariants;
 
 /**
  * Eliminar una variante de referencia
@@ -1731,6 +2169,7 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
             const variant = variants[variantId];
             return {
                 name: variant.name || '',
+                plazo_entrega_personalizado: variant.plazo_entrega_personalizado || null,
                 price_tiers: (variant.tiers || []).map(tier => ({
                     min_qty: tier.minQty ? parseInt(tier.minQty) : null,
                     max_qty: tier.maxQty ? parseInt(tier.maxQty) : null,
@@ -1768,13 +2207,13 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
         console.log('📋 Producto con cliente asociado. visible_en_catalogo forzado a false');
     } else {
         // Si no tiene cliente, usar el valor del checkbox
-        const visibleEnCatalogoCheckbox = document.getElementById('visibleEnCatalogo');
-        if (visibleEnCatalogoCheckbox) {
+    const visibleEnCatalogoCheckbox = document.getElementById('visibleEnCatalogo');
+    if (visibleEnCatalogoCheckbox) {
             visibleEnCatalogo = visibleEnCatalogoCheckbox.checked;
             console.log('📋 Checkbox encontrado. visible_en_catalogo será guardado como:', visibleEnCatalogo);
-        } else {
+    } else {
             visibleEnCatalogo = true; // Por defecto true si no existe el checkbox
-            console.log('⚠️ Checkbox no encontrado, usando valor por defecto: true');
+        console.log('⚠️ Checkbox no encontrado, usando valor por defecto: true');
         }
     }
     
@@ -2804,9 +3243,51 @@ async function fillFormWithProduct(product, isDuplicate = false) {
         const container = document.getElementById('variantesReferenciasContainer');
         if (container) {
             container.innerHTML = '';
+            
+            // Verificar si es VACAVALIENTE
+            const marcaField = document.getElementById('marca');
+            const isVacavaliente = marcaField && marcaField.value && marcaField.value.toUpperCase().trim() === 'VACAVALIENTE';
+            
+            if (isVacavaliente && product.variantes_referencias.length > 0) {
+                // Para VACAVALIENTE, extraer la referencia base de la primera variante
+                // La referencia base se obtiene reemplazando los dígitos 5 y 6 con "00"
+                const firstRef = product.variantes_referencias[0].referencia;
+                let baseRef = '';
+                if (firstRef && firstRef.length >= 6) {
+                    const refArray = firstRef.split('');
+                    // Intentar encontrar el código de color en los dígitos 5 y 6
+                    const colorCode = refArray[4] + refArray[5];
+                    const colorObj = VACAVALIENTE_COLORS.find(c => c.code === colorCode);
+                    if (colorObj) {
+                        // Si encontramos el color, reemplazar con "00" para obtener la base
+                        refArray[4] = '0';
+                        refArray[5] = '0';
+                        baseRef = refArray.join('');
+                    } else {
+                        // Si no encontramos el color, usar la referencia tal cual
+                        baseRef = firstRef;
+                    }
+                }
+                
+                // Guardar la referencia base temporalmente para que addVarianteReferencia la use
+                if (baseRef) {
+                    const tempBaseInput = document.createElement('input');
+                    tempBaseInput.type = 'hidden';
+                    tempBaseInput.className = 'temp-vacavaliente-base-ref';
+                    tempBaseInput.value = baseRef;
+                    container.appendChild(tempBaseInput);
+                }
+            }
+            
             product.variantes_referencias.forEach(variante => {
                 addVarianteReferencia(variante);
             });
+            
+            // Limpiar el input temporal
+            const tempBaseInput = container.querySelector('.temp-vacavaliente-base-ref');
+            if (tempBaseInput) {
+                tempBaseInput.remove();
+            }
         }
     }
     
@@ -2858,12 +3339,12 @@ async function fillFormWithProduct(product, isDuplicate = false) {
         setTimeout(() => {
             // Primero crear todas las variantes necesarias
             product.variants.forEach(() => {
-                addVariant();
+                    addVariant();
             });
             
             // Luego cargar los datos de cada variante
-            setTimeout(() => {
-                const variantIds = Object.keys(variants).filter(id => id !== 'base');
+                setTimeout(() => {
+                    const variantIds = Object.keys(variants).filter(id => id !== 'base');
                 product.variants.forEach((variant, index) => {
                     if (variantIds.length > index) {
                         const variantId = variantIds[index];
@@ -2871,14 +3352,16 @@ async function fillFormWithProduct(product, isDuplicate = false) {
                             // Cargar nombre de la variante
                             if (variants[variantId]) {
                                 variants[variantId].name = variant.name || '';
+                                // Cargar plazo de entrega personalizado
+                                variants[variantId].plazo_entrega_personalizado = variant.plazo_entrega_personalizado || '';
                             }
                             // Cargar price_tiers de la variante
                             if (variant.price_tiers) {
                                 loadPriceTiers(variant.price_tiers, variantId);
-                            }
                         }
                     }
-                });
+                    }
+            });
                 renderVariants();
             }, 200);
         }, 400);
@@ -3011,7 +3494,7 @@ function loadPriceTiers(priceTiers, variantId) {
     
     const variant = variants[variantId];
     if (!variant) {
-        variants[variantId] = { name: '', tiers: [] };
+        variants[variantId] = { name: '', tiers: [], plazo_entrega_personalizado: '' };
     }
     
     variants[variantId].tiers = priceTiers.map(tier => ({

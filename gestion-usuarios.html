@@ -262,6 +262,7 @@
                 <thead>
                     <tr>
                         <th>Email</th>
+                        <th>Rol</th>
                         <th>Último Acceso</th>
                         <th>Fecha de Creación</th>
                         <th>Acciones</th>
@@ -269,7 +270,7 @@
                 </thead>
                 <tbody id="usersTableBody">
                     <tr>
-                        <td colspan="4" class="loading">
+                        <td colspan="5" class="loading">
                             <i class="fas fa-spinner fa-spin"></i> Cargando usuarios...
                         </td>
                     </tr>
@@ -296,6 +297,15 @@
                     <label for="newUserPassword">Contraseña</label>
                     <input type="password" id="newUserPassword" required autocomplete="new-password" minlength="6">
                 </div>
+                <div class="form-group">
+                    <label for="newUserRole">Rol</label>
+                    <select id="newUserRole" required style="width: 100%; padding: 12px; background: var(--bg-primary, #0f172a); border: 1px solid var(--border-color, #334155); border-radius: 8px; color: var(--text-primary, #f1f5f9); font-size: 1rem;">
+                        <option value="viewer">Visualizador</option>
+                        <option value="comercial">Comercial</option>
+                        <option value="editor">Editor</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Crear Usuario</button>
@@ -307,6 +317,7 @@
     <!-- Scripts -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="supabase-config-universal.js"></script>
+    <script src="stock-warning.js"></script>
     <script src="auth.js"></script>
     <script src="roles.js"></script>
     <script>
@@ -355,8 +366,22 @@
                 tbody.innerHTML = '';
 
                 if (users.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No hay usuarios registrados</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No hay usuarios registrados</td></tr>';
                     return;
+                }
+
+                // Cargar roles de todos los usuarios
+                const userIds = users.map(u => u.id);
+                const { data: userRolesData } = await supabaseClient
+                    .from('user_roles')
+                    .select('user_id, role')
+                    .in('user_id', userIds);
+
+                const rolesMap = {};
+                if (userRolesData) {
+                    userRolesData.forEach(ur => {
+                        rolesMap[ur.user_id] = ur.role;
+                    });
                 }
 
                 users.forEach(user => {
@@ -367,9 +392,18 @@
                     const createdAt = user.created_at 
                         ? new Date(user.created_at).toLocaleString('es-ES')
                         : '-';
+                    const userRole = rolesMap[user.id] || 'viewer';
 
                     row.innerHTML = `
                         <td class="user-email">${user.email}</td>
+                        <td>
+                            <select class="role-select" data-user-id="${user.id}" style="padding: 6px 12px; background: var(--bg-primary, #0f172a); border: 1px solid var(--border-color, #334155); border-radius: 6px; color: var(--text-primary, #f1f5f9); font-size: 0.9rem; cursor: pointer;">
+                                <option value="viewer" ${userRole === 'viewer' ? 'selected' : ''}>Visualizador</option>
+                                <option value="comercial" ${userRole === 'comercial' ? 'selected' : ''}>Comercial</option>
+                                <option value="editor" ${userRole === 'editor' ? 'selected' : ''}>Editor</option>
+                                <option value="admin" ${userRole === 'admin' ? 'selected' : ''}>Administrador</option>
+                            </select>
+                        </td>
                         <td>${lastSignIn}</td>
                         <td>${createdAt}</td>
                         <td>
@@ -382,10 +416,19 @@
                     `;
                     tbody.appendChild(row);
                 });
+
+                // Agregar event listeners a los selects de roles
+                document.querySelectorAll('.role-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const userId = e.target.dataset.userId;
+                        const newRole = e.target.value;
+                        await updateUserRole(userId, newRole);
+                    });
+                });
             } catch (error) {
                 console.error('Error cargando usuarios:', error);
                 document.getElementById('usersTableBody').innerHTML = 
-                    '<tr><td colspan="4" style="text-align: center; color: #fca5a5;">Error al cargar usuarios</td></tr>';
+                    '<tr><td colspan="5" style="text-align: center; color: #fca5a5;">Error al cargar usuarios</td></tr>';
             }
         }
 
@@ -408,6 +451,7 @@
             
             const email = document.getElementById('newUserEmail').value.trim();
             const password = document.getElementById('newUserPassword').value;
+            const role = document.getElementById('newUserRole').value;
             const errorMsg = document.getElementById('errorMessage');
             const successMsg = document.getElementById('successMessage');
 
@@ -415,15 +459,21 @@
             successMsg.classList.remove('show');
 
             try {
-                // Nota: Para crear usuarios necesitas usar el Admin API
-                // Esto requiere una service_role key, no la anon key
-                // Por ahora, usaremos signUp que crea usuarios pero requiere confirmación
+                // Crear usuario en Supabase Auth
                 const { data, error } = await supabaseClient.auth.signUp({
                     email: email,
                     password: password
                 });
 
                 if (error) throw error;
+
+                // Si el usuario se creó correctamente, asignar rol
+                if (data.user) {
+                    const roleResult = await window.rolesManager.assignRole(data.user.id, role);
+                    if (!roleResult.success) {
+                        console.warn('Usuario creado pero error asignando rol:', roleResult.error);
+                    }
+                }
 
                 successMsg.textContent = 'Usuario creado exitosamente. El usuario debe confirmar su email.';
                 successMsg.classList.add('show');
@@ -437,6 +487,32 @@
             } catch (error) {
                 errorMsg.textContent = error.message || 'Error al crear usuario';
                 errorMsg.classList.add('show');
+            }
+        }
+
+        // Actualizar rol de usuario
+        async function updateUserRole(userId, newRole) {
+            try {
+                const result = await window.rolesManager.assignRole(userId, newRole);
+                if (result.success) {
+                    // Mostrar mensaje de éxito temporal
+                    const select = document.querySelector(`.role-select[data-user-id="${userId}"]`);
+                    if (select) {
+                        const originalBg = select.style.background;
+                        select.style.background = 'rgba(16, 185, 129, 0.2)';
+                        setTimeout(() => {
+                            select.style.background = originalBg;
+                        }, 1000);
+                    }
+                } else {
+                    alert('Error al actualizar rol: ' + result.error);
+                    // Recargar usuarios para restaurar el valor anterior
+                    await loadUsers();
+                }
+            } catch (error) {
+                console.error('Error actualizando rol:', error);
+                alert('Error al actualizar rol: ' + error.message);
+                await loadUsers();
             }
         }
 

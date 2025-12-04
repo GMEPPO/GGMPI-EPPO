@@ -96,10 +96,10 @@ class CartManager {
                 id: proposal.id,
                 nombre_cliente: proposal.nombre_cliente,
                 nombre_comercial: proposal.nombre_comercial,
-                fecha_propuesta: proposal.fecha_propuesta,
+                fecha_inicial: proposal.fecha_inicial,
                 estado_propuesta: proposal.estado_propuesta,
                 codigo_propuesta: proposal.codigo_propuesta || null,
-                numero_cliente: proposal.numero_cliente || null,
+                numero_cliente: proposal.numero_cliente || '0',
                 articulos: articulos || []
             };
 
@@ -433,7 +433,12 @@ class CartManager {
                     plazoEntrega: articulo.plazo_entrega || product.plazoEntrega || product.plazo_entrega || '',
                     price_tiers: product.price_tiers || [],
                     variants: product.variants || [],
-                    selectedVariant: articulo.precio_personalizado ? 0 : null,
+                    selectedVariant: (articulo.tipo_personalizacion && 
+                                     articulo.tipo_personalizacion !== 'Sin personalización' && 
+                                     articulo.tipo_personalizacion !== 'Sem personalização' && 
+                                     articulo.tipo_personalizacion !== 'No customization' &&
+                                     product.variants && 
+                                     product.variants.length > 0) ? 0 : null,
                     variantes_referencias: product.variantes_referencias || [],
                     selectedReferenceVariant: (articulo.variante_referencia !== null && articulo.variante_referencia !== undefined) 
                         ? parseInt(articulo.variante_referencia) 
@@ -521,8 +526,21 @@ class CartManager {
             commercialNameInput.value = this.editingProposalData.nombre_comercial || '';
         }
         if (proposalDateInput) {
-            const fecha = new Date(this.editingProposalData.fecha_propuesta);
+            const fecha = new Date(this.editingProposalData.fecha_inicial);
             proposalDateInput.value = fecha.toISOString().split('T')[0];
+            // Configurar fecha: desde hace un mes hasta hoy
+            const today = new Date();
+            const oneMonthAgo = new Date(today);
+            oneMonthAgo.setMonth(today.getMonth() - 1); // Restar un mes
+            const maxDate = today.toISOString().split('T')[0]; // Máximo: hoy
+            const minDate = oneMonthAgo.toISOString().split('T')[0]; // Mínimo: hace un mes
+            proposalDateInput.setAttribute('max', maxDate);
+            proposalDateInput.setAttribute('min', minDate);
+        }
+        const clientNumberInput = document.getElementById('clientNumberInput');
+        if (clientNumberInput) {
+            // Si no hay número de cliente o es null, usar "0"
+            clientNumberInput.value = this.editingProposalData.numero_cliente || '0';
         }
     }
 
@@ -889,33 +907,33 @@ class CartManager {
             }
         }
         
-        this.cart.push({
-            id: product.id,
+            this.cart.push({
+                id: product.id,
             cartItemId: cartItemId, // ID único para identificar este item específico en el carrito
-            type: 'product',
-            name: product.nombre,
-            category: product.categoria,
-            price: initialPrice,
-            basePrice: product.precio, // Precio base por si no hay escalones
-            image: product.foto,
-            quantity: normalizedQuantity, // Usar cantidad normalizada
-            specs: this.getProductSpecs(product),
-            descripcionEs: product.descripcionEs || product.descripcion_es || '',
-            descripcionPt: product.descripcionPt || product.descripcion_pt || '',
-            description: description,
-            referencia: product.id ? String(product.id) : '',
-            plazoEntrega: product.plazoEntrega || product.plazo_entrega || '',
-            price_tiers: priceTiers.length > 0 ? priceTiers : [], // Asegurar que siempre sea un array
-            variants: product.variants || [], // Variantes personalizadas
-            selectedVariant: null, // Variante seleccionada (null = base)
+                type: 'product',
+                name: product.nombre,
+                category: product.categoria,
+                price: initialPrice,
+                basePrice: product.precio, // Precio base por si no hay escalones
+                image: product.foto,
+                quantity: normalizedQuantity, // Usar cantidad normalizada
+                specs: this.getProductSpecs(product),
+                descripcionEs: product.descripcionEs || product.descripcion_es || '',
+                descripcionPt: product.descripcionPt || product.descripcion_pt || '',
+                description: description,
+                referencia: product.id ? String(product.id) : '',
+                plazoEntrega: product.plazoEntrega || product.plazo_entrega || '',
+                price_tiers: priceTiers.length > 0 ? priceTiers : [], // Asegurar que siempre sea un array
+                variants: product.variants || [], // Variantes personalizadas
+                selectedVariant: null, // Variante seleccionada (null = base)
             variantes_referencias: referenceVariants, // Variantes de referencias por color
             selectedReferenceVariant: null, // Variante de referencia seleccionada (null = sin seleccionar)
-            minQuantity: initialPriceResult.minQuantity,
-            isValidQuantity: initialPriceResult.isValid,
-            box_size: product.box_size || null, // Guardar box_size
-            phc_ref: product.phc_ref || null, // Guardar phc_ref
-            observations: '' // Campo para observaciones del usuario
-        });
+                minQuantity: initialPriceResult.minQuantity,
+                isValidQuantity: initialPriceResult.isValid,
+                box_size: product.box_size || null, // Guardar box_size
+                phc_ref: product.phc_ref || null, // Guardar phc_ref
+                observations: '' // Campo para observaciones del usuario
+            });
         
         // Guardar inmediatamente para asegurar que price_tiers se guarden
         this.saveCart();
@@ -1338,7 +1356,7 @@ class CartManager {
         }
 
         try {
-            const headersHTML = this.renderCartHeaders();
+        const headersHTML = this.renderCartHeaders();
             const itemsHTML = this.cart.map(item => {
                 try {
                     return this.renderCartItem(item);
@@ -1347,7 +1365,7 @@ class CartManager {
                     return ''; // Retornar string vacío si hay error para no romper el renderizado
                 }
             }).join('');
-            cartItemsContainer.innerHTML = headersHTML + itemsHTML;
+        cartItemsContainer.innerHTML = headersHTML + itemsHTML;
             
             // Después de renderizar, actualizar todos los plazos de entrega según stock
             // Esto asegura que todos los productos mantengan su cálculo de stock actualizado
@@ -2262,7 +2280,7 @@ class CartManager {
             notification.style.transform = 'translateX(100%)';
             setTimeout(() => {
                 if (document.body.contains(notification)) {
-                    document.body.removeChild(notification);
+                document.body.removeChild(notification);
                     // Reposicionar notificaciones restantes
                     this.repositionNotifications();
                 }
@@ -2799,7 +2817,7 @@ function handleProductSearch(e) {
                         <h4 class="product-search-item-name">${product.nombre}</h4>
                         <p class="product-search-item-ref">Ref: ${product.id || product.referencia} | ${product.marca || 'Sin marca'}</p>
                         <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
-                            <span class="product-search-item-category">${categoryName}</span>
+                        <span class="product-search-item-category">${categoryName}</span>
                             <span style="font-weight: 700; color: var(--accent-500, #f59e0b); font-size: 0.95rem;">${precio} €</span>
                             ${plazoEntrega ? `<span style="font-size: 0.8rem; color: var(--text-secondary, #6b7280); background: var(--bg-gray-100, #f3f4f6); padding: 2px 8px; border-radius: 4px;"><i class="fas fa-truck" style="margin-right: 4px;"></i>${plazoEntrega}</span>` : ''}
                         </div>
@@ -4052,27 +4070,27 @@ window.addToCart = function(product, quantity = 1) {
         // Generar un ID único para este item del carrito
         const cartItemId = `cart-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
-        cart.push({
-            id: product.id,
+            cart.push({
+                id: product.id,
             cartItemId: cartItemId, // ID único para identificar este item específico en el carrito
-            type: 'product',
-            name: product.nombre,
-            category: product.categoria,
-            price: initialPrice,
-            basePrice: product.precio,
-            image: product.foto,
-            quantity: normalizedQuantity, // Usar cantidad normalizada
-            specs: getProductSpecs(product),
-            descripcionEs: product.descripcionEs || product.descripcion_es || '',
-            descripcionPt: product.descripcionPt || product.descripcion_pt || '',
-            description: description,
-            referencia: product.id ? String(product.id) : '',
-            plazoEntrega: product.plazoEntrega || product.plazo_entrega || '',
-            price_tiers: priceTiers,
-            box_size: product.box_size || null, // Guardar box_size
-            phc_ref: product.phc_ref || null, // Guardar phc_ref
-            observations: ''
-        });
+                type: 'product',
+                name: product.nombre,
+                category: product.categoria,
+                price: initialPrice,
+                basePrice: product.precio,
+                image: product.foto,
+                quantity: normalizedQuantity, // Usar cantidad normalizada
+                specs: getProductSpecs(product),
+                descripcionEs: product.descripcionEs || product.descripcion_es || '',
+                descripcionPt: product.descripcionPt || product.descripcion_pt || '',
+                description: description,
+                referencia: product.id ? String(product.id) : '',
+                plazoEntrega: product.plazoEntrega || product.plazo_entrega || '',
+                price_tiers: priceTiers,
+                box_size: product.box_size || null, // Guardar box_size
+                phc_ref: product.phc_ref || null, // Guardar phc_ref
+                observations: ''
+            });
 
         localStorage.setItem('eppo_cart', JSON.stringify(cart));
         
@@ -4113,15 +4131,15 @@ function showPersonalizedPriceWarningBanner(itemId) {
     const messages = {
         es: {
             title: 'Precio sujeto a confirmación',
-            message: 'El precio mostrado está sujeto a confirmación después de la recepción del logo, ya que el precio puede alterarse si el logo es muy complejo.'
+            message: 'El precio mostrado está sujeto a confirmación después de la recepción del logo.'
         },
         pt: {
             title: 'Preço sujeito a confirmação',
-            message: 'O preço mostrado está sujeito a confirmação após a recepção do logotipo, pois o preço pode alterar-se se o logotipo for muito complexo.'
+            message: 'O preço mostrado está sujeito a confirmação após a recepção do logotipo.'
         },
         en: {
             title: 'Price subject to confirmation',
-            message: 'The displayed price is subject to confirmation after receiving the logo, as the price may change if the logo is very complex.'
+            message: 'The displayed price is subject to confirmation after receiving the logo.'
         }
     };
     
@@ -4449,6 +4467,22 @@ async function generateProposalPDFFromSavedProposal(proposalId, language = 'pt')
             );
 
             if (product) {
+                // Obtener variante de referencia (color) seleccionada
+                const selectedReferenceVariant = (articulo.variante_referencia !== null && articulo.variante_referencia !== undefined) 
+                    ? parseInt(articulo.variante_referencia) 
+                    : null;
+
+                // Obtener variantes_referencias del producto
+                let variantesReferencias = product.variantes_referencias || [];
+                if (variantesReferencias && typeof variantesReferencias === 'string') {
+                    try {
+                        variantesReferencias = JSON.parse(variantesReferencias);
+                    } catch (e) {
+                        console.warn('Error parseando variantes_referencias:', e);
+                        variantesReferencias = [];
+                    }
+                }
+
                 cartItems.push({
                     id: product.id,
                     type: 'product',
@@ -4463,7 +4497,14 @@ async function generateProposalPDFFromSavedProposal(proposalId, language = 'pt')
                     descripcionPt: product.descripcionPt || '',
                     price_tiers: product.price_tiers || [],
                     variants: product.variants || [],
-                    selectedVariant: articulo.tipo_personalizacion && articulo.tipo_personalizacion !== 'Sin personalización' ? 0 : null
+                    selectedVariant: (articulo.tipo_personalizacion && 
+                                     articulo.tipo_personalizacion !== 'Sin personalización' && 
+                                     articulo.tipo_personalizacion !== 'Sem personalização' && 
+                                     articulo.tipo_personalizacion !== 'No customization' &&
+                                     product.variants && 
+                                     product.variants.length > 0) ? 0 : null,
+                    selectedReferenceVariant: selectedReferenceVariant, // Color seleccionado
+                    variantes_referencias: variantesReferencias // Variantes de referencia del producto
                 });
             } else {
                 // Si no se encuentra el producto, crear un item especial
@@ -4484,7 +4525,7 @@ async function generateProposalPDFFromSavedProposal(proposalId, language = 'pt')
         window.cartManager.editingProposalData = {
             id: proposal.id,
             codigo_propuesta: proposal.codigo_propuesta,
-            fecha_creacion: proposal.fecha_propuesta,
+            fecha_creacion: proposal.fecha_inicial,
             nombre_cliente: proposal.nombre_cliente,
             nombre_comercial: proposal.nombre_comercial,
             pais: proposal.pais
@@ -4525,7 +4566,7 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     // Esto garantiza que tengamos las observaciones más recientes y el color seleccionado
     const savedCart = useProposalData ? window.cartManager.cart : window.cartManager.loadCart();
     if (!useProposalData) {
-        window.cartManager.cart = savedCart;
+    window.cartManager.cart = savedCart;
     }
     
     // Debug: verificar que las observaciones y colores estén presentes
@@ -4752,7 +4793,7 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     // Obtener información de la propuesta
     // Si se proporciona proposalData, usar esos datos; sino usar editingProposalData o valores por defecto
     const proposalCode = proposalData?.codigo_propuesta || window.cartManager?.editingProposalData?.codigo_propuesta || null;
-    const proposalDate = proposalData?.fecha_propuesta || proposalData?.fecha_creacion || window.cartManager?.editingProposalData?.fecha_creacion || new Date().toISOString();
+    const proposalDate = proposalData?.fecha_inicial || proposalData?.fecha_creacion || window.cartManager?.editingProposalData?.fecha_creacion || new Date().toISOString();
     const commercialName = proposalData?.nombre_comercial || window.cartManager?.editingProposalData?.nombre_comercial || '';
     const clientName = proposalData?.nombre_cliente || window.cartManager?.editingProposalData?.nombre_cliente || '';
     
@@ -4763,27 +4804,21 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         { day: '2-digit', month: '2-digit', year: 'numeric' }
     );
     
-    // Crear cuadro con información de la propuesta
+    // Crear cuadro con información de la propuesta (todos los datos en una sola fila, con posibilidad de múltiples líneas)
     const titleY = 5 + logoHeight + 8; // Espacio después de los logotipos
-    const boxPadding = 8;
-    const boxWidth = 90; // Ancho del cuadro
-    const boxHeight = 30; // Altura del cuadro
+    const boxPadding = 6;
+    const boxWidth = pageWidth - (margin * 2); // Ancho completo de la página
+    const baseBoxHeight = 12; // Altura base (una sola fila)
     const boxX = margin; // Posición X (izquierda)
     const boxY = titleY; // Posición Y
-    
-    // Dibujar fondo del cuadro (blanco con borde negro)
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(0.5);
-    doc.rect(boxX, boxY, boxWidth, boxHeight, 'FD'); // FD = Fill and Draw
+    const lineSpacing = 4; // Espacio entre líneas cuando hay texto dividido
     
     // Texto dentro del cuadro
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
     
-    let currentTextY = boxY + boxPadding;
-    const lineSpacing = 5;
+    const itemSpacing = 25; // Espacio entre cada item (aumentado para mejor legibilidad)
     
     // Etiquetas según idioma
     const labels = {
@@ -4809,46 +4844,124 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     
     const l = labels[lang] || labels.pt;
     
+    // Calcular el espacio disponible para cada item
+    const totalItems = 4;
+    const totalSpacing = itemSpacing * (totalItems - 1);
+    // Calcular el ancho disponible para los items (todo el ancho menos padding y espaciado)
+    const availableWidthForItems = boxWidth - (boxPadding * 2) - totalSpacing;
+    const itemWidth = availableWidthForItems / totalItems; // Ancho de cada item distribuido equitativamente
+    const maxValueWidth = itemWidth; // Usar el mismo ancho para los valores
+    
+    // Función para dividir texto en palabras y ajustar a múltiples líneas si es necesario
+    function splitTextIntoLines(text, maxWidth) {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+        
+        words.forEach(word => {
+            const testLine = currentLine ? currentLine + ' ' + word : word;
+            const testWidth = doc.getTextWidth(testLine);
+            
+            if (testWidth <= maxWidth && currentLine) {
+                currentLine = testLine;
+            } else {
+                if (currentLine) {
+                    lines.push(currentLine);
+                }
+                // Si una palabra sola es más ancha que maxWidth, dividirla por caracteres
+                if (doc.getTextWidth(word) > maxWidth) {
+                    let charLine = '';
+                    for (let i = 0; i < word.length; i++) {
+                        const testCharLine = charLine + word[i];
+                        if (doc.getTextWidth(testCharLine) > maxWidth && charLine) {
+                            lines.push(charLine);
+                            charLine = word[i];
+                        } else {
+                            charLine = testCharLine;
+                        }
+                    }
+                    currentLine = charLine;
+                } else {
+                    currentLine = word;
+                }
+            }
+        });
+        
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+        
+        return lines.length > 0 ? lines : [text];
+    }
+    
+    // Función para dibujar un item con label arriba y valor abajo (puede tener múltiples líneas)
+    function drawItemWithMultiline(label, value, maxValueWidth, startX, labelY, valueY) {
+        // Dibujar label arriba (centrado)
+        doc.setFont('helvetica', 'bold');
+        const labelWidth = doc.getTextWidth(label);
+        doc.text(label, startX + (maxValueWidth / 2) - (labelWidth / 2), labelY);
+        
+        // Dibujar valor abajo
+        doc.setFont('helvetica', 'normal');
+        const valueText = value || '-';
+        
+        // Dividir el valor en líneas si es necesario
+        const valueLines = splitTextIntoLines(valueText, maxValueWidth);
+        
+        // Dibujar cada línea del valor (centrado)
+        valueLines.forEach((line, index) => {
+            const lineWidth = doc.getTextWidth(line);
+            doc.text(line, startX + (maxValueWidth / 2) - (lineWidth / 2), valueY + (index * lineSpacing));
+        });
+        
+        // Retornar la altura total usada (número de líneas del valor)
+        return valueLines.length;
+    }
+    
+    // Calcular cuántas líneas necesita cada item ANTES de dibujar
+    const proposalCodeText = proposalCode || '-';
+    const commercialText = commercialName || '-';
+    const clientText = clientName || '-';
+    
+    const proposalLines = splitTextIntoLines(proposalCodeText, maxValueWidth).length;
+    const dateLines = splitTextIntoLines(formattedDate, maxValueWidth).length;
+    const commercialLines = splitTextIntoLines(commercialText, maxValueWidth).length;
+    const clientLines = splitTextIntoLines(clientText, maxValueWidth).length;
+    
+    // Calcular la altura máxima necesaria (1 línea para labels + líneas de valores)
+    const maxLines = Math.max(proposalLines, dateLines, commercialLines, clientLines);
+    const labelRowHeight = 5; // Altura para la fila de labels
+    const boxHeight = labelRowHeight + baseBoxHeight + ((maxLines - 1) * lineSpacing);
+    
+    // Dibujar fondo del cuadro (blanco con borde negro) con altura ajustada
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.rect(boxX, boxY, boxWidth, boxHeight, 'FD'); // FD = Fill and Draw
+    
+    // Calcular posiciones Y: labels arriba, valores abajo
+    const labelY = boxY + boxPadding + 4; // Posición Y para los labels
+    const valueY = labelY + labelRowHeight; // Posición Y para los valores (debajo de los labels)
+    
+    // Dibujar cada item
+    let currentX = boxX + boxPadding;
+    
     // Número de propuesta
-    doc.setFont('helvetica', 'bold');
-    doc.text(l.proposalNumber, boxX + boxPadding, currentTextY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(proposalCode || '-', boxX + boxPadding + 35, currentTextY);
-    currentTextY += lineSpacing;
+    drawItemWithMultiline(l.proposalNumber, proposalCodeText, itemWidth, currentX, labelY, valueY);
+    currentX += itemWidth + itemSpacing;
     
     // Fecha de propuesta
-    doc.setFont('helvetica', 'bold');
-    doc.text(l.proposalDate, boxX + boxPadding, currentTextY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(formattedDate, boxX + boxPadding + 35, currentTextY);
-    currentTextY += lineSpacing;
+    drawItemWithMultiline(l.proposalDate, formattedDate, itemWidth, currentX, labelY, valueY);
+    currentX += itemWidth + itemSpacing;
     
-    // Nombre del comercial
-    doc.setFont('helvetica', 'bold');
-    doc.text(l.commercial, boxX + boxPadding, currentTextY);
-    doc.setFont('helvetica', 'normal');
-    const commercialText = commercialName || '-';
-    const commercialLines = doc.splitTextToSize(commercialText, boxWidth - (boxPadding * 2) - 35);
-    doc.text(commercialLines[0], boxX + boxPadding + 35, currentTextY);
-    if (commercialLines.length > 1) {
-        currentTextY += lineSpacing;
-        doc.text(commercialLines[1], boxX + boxPadding + 35, currentTextY);
-    }
-    currentTextY += lineSpacing;
+    // Comercial
+    drawItemWithMultiline(l.commercial, commercialText, itemWidth, currentX, labelY, valueY);
+    currentX += itemWidth + itemSpacing;
     
-    // Nombre del cliente
-    doc.setFont('helvetica', 'bold');
-    doc.text(l.client, boxX + boxPadding, currentTextY);
-    doc.setFont('helvetica', 'normal');
-    const clientText = clientName || '-';
-    const clientLines = doc.splitTextToSize(clientText, boxWidth - (boxPadding * 2) - 35);
-    doc.text(clientLines[0], boxX + boxPadding + 35, currentTextY);
-    if (clientLines.length > 1) {
-        currentTextY += lineSpacing;
-        doc.text(clientLines[1], boxX + boxPadding + 35, currentTextY);
-    }
+    // Cliente
+    drawItemWithMultiline(l.client, clientText, itemWidth, currentX, labelY, valueY);
     
-    // Línea decorativa debajo del cuadro
+    // Línea decorativa debajo del cuadro (usar boxHeight calculado dinámicamente)
     const headerBottomY = boxY + boxHeight + 5;
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
@@ -4943,14 +5056,14 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         } else {
             // Dividir texto en líneas que caben en el ancho de la celda
             textLines = doc.splitTextToSize(text, availableWidth);
-            
-            // Limitar número de líneas si se especifica
-            if (maxLines && textLines.length > maxLines) {
-                textLines = textLines.slice(0, maxLines);
-                // Agregar "..." si se cortó
-                const lastLine = textLines[textLines.length - 1];
-                if (lastLine.length > 0) {
-                    textLines[textLines.length - 1] = lastLine.substring(0, lastLine.length - 3) + '...';
+        
+        // Limitar número de líneas si se especifica
+        if (maxLines && textLines.length > maxLines) {
+            textLines = textLines.slice(0, maxLines);
+            // Agregar "..." si se cortó
+            const lastLine = textLines[textLines.length - 1];
+            if (lastLine.length > 0) {
+                textLines[textLines.length - 1] = lastLine.substring(0, lastLine.length - 3) + '...';
                 }
             }
         }
@@ -4962,8 +5075,8 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         
         // Dibujar texto (ya establecimos el tamaño de fuente arriba si es noWrap)
         if (!noWrap) {
-            doc.setFontSize(fontSize);
-            doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setFontSize(fontSize);
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
         } else {
             // Asegurar que el tamaño de fuente esté establecido (ya lo hicimos arriba)
             doc.setFontSize(actualFontSize);
@@ -5281,7 +5394,7 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
                             selectedColorText = `Cor seleccionada ${selectedVariant.color}`;
                         } else if (lang === 'es') {
                             selectedColorText = `Color seleccionado ${selectedVariant.color}`;
-                        } else {
+            } else {
                             selectedColorText = `Color selected ${selectedVariant.color}`;
                         }
                         console.log('✅ Color seleccionado generado:', selectedColorText);
@@ -5449,25 +5562,27 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         });
 
         // Verificar si necesitamos una nueva página
-        if (currentY + calculatedRowHeight > pageHeight - 30) {
+        // NO reservar espacio para footer en páginas intermedias - usar todo el espacio disponible
+        if (currentY + calculatedRowHeight > pageHeight - margin) {
             doc.addPage();
-            currentY = startY;
+            // En páginas siguientes, empezar desde el margen superior (sin espacio de logos)
+            currentY = margin;
             
             // Redibujar encabezados en nueva página - fondo gris oscuro
             doc.setFillColor(64, 64, 64); // Mismo gris oscuro que el pie de página
             const headerWidth = Object.values(colWidths).reduce((sum, width) => sum + width, 0);
-            doc.rect(margin, currentY, headerWidth, baseRowHeight, 'F');
-            // Texto blanco para los encabezados
-            drawCell(colPositions.name, currentY, colWidths.name, baseRowHeight, t.name, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
-            drawCell(colPositions.photo, currentY, colWidths.photo, baseRowHeight, t.photo, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
-            drawCell(colPositions.description, currentY, colWidths.description, baseRowHeight, t.description, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
-            drawCell(colPositions.quantity, currentY, colWidths.quantity, baseRowHeight, t.quantity, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
-            drawCell(colPositions.unitPrice, currentY, colWidths.unitPrice, baseRowHeight, t.unitPrice, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
-            drawCell(colPositions.total, currentY, colWidths.total, baseRowHeight, t.total, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
-            drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, baseRowHeight, t.deliveryTime, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            doc.rect(margin, margin, headerWidth, baseRowHeight, 'F');
+            // Texto blanco para los encabezados (usar margin en lugar de currentY para que quede alineado)
+            drawCell(colPositions.name, margin, colWidths.name, baseRowHeight, t.name, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            drawCell(colPositions.photo, margin, colWidths.photo, baseRowHeight, t.photo, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            drawCell(colPositions.description, margin, colWidths.description, baseRowHeight, t.description, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            drawCell(colPositions.quantity, margin, colWidths.quantity, baseRowHeight, t.quantity, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            drawCell(colPositions.unitPrice, margin, colWidths.unitPrice, baseRowHeight, t.unitPrice, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            drawCell(colPositions.total, margin, colWidths.total, baseRowHeight, t.total, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            drawCell(colPositions.deliveryTime, margin, colWidths.deliveryTime, baseRowHeight, t.deliveryTime, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
             // Restaurar color de texto a negro para el contenido
             doc.setTextColor(0, 0, 0);
-            currentY += baseRowHeight;
+            currentY = margin + baseRowHeight;
         }
 
         // Dibujar fila con altura calculada
@@ -5544,28 +5659,7 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         currentY += calculatedRowHeight;
     }
 
-    // Dibujar total
-    if (currentY + baseRowHeight > pageHeight - 30) {
-        doc.addPage();
-        currentY = startY;
-    }
-
-    // Fila del total - fondo gris oscuro como el pie de página
-    doc.setFillColor(64, 64, 64); // Mismo gris oscuro que el pie de página
-    const totalRowWidth = colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice + colWidths.total + colWidths.deliveryTime;
-    doc.rect(margin, currentY, totalRowWidth, baseRowHeight, 'F');
-    
-    // Texto blanco para el total
-    drawCell(colPositions.name, currentY, colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice, baseRowHeight, t.totalProposal, { align: 'center', bold: true, fontSize: 9, textColor: whiteColor });
-    drawCell(colPositions.total, currentY, colWidths.total, baseRowHeight, `€${totalProposal.toFixed(2)}`, { align: 'center', bold: true, fontSize: 9, noWrap: true, textColor: whiteColor });
-    // Restaurar color de texto a negro
-    doc.setTextColor(0, 0, 0);
-    drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, baseRowHeight, '', { border: true });
-
-    // Agregar pie de página con condiciones legales (estilo oscuro como en la imagen)
-    currentY += baseRowHeight + 10; // Espacio después del total
-    
-    // Calcular altura necesaria para el pie de página
+    // Calcular altura necesaria para el pie de página ANTES de dibujar el total
     const footerPaddingTop = 12; // Padding superior
     const footerPaddingBottom = 0; // Sin padding inferior (pegado al final)
     const footerTextSize = 9; // Tamaño de fuente
@@ -5574,19 +5668,22 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     // Texto del pie de página según idioma
     const footerTexts = {
         pt: [
-            'Preços não incluem IVA e são válidos para uma única entrega. Estes preços não incluem despesas de transporte.',
+            'Preços não incluem IVA e são válidos para uma única entrega.',
+            'Estes preços não incluem despesas de transporte.',
             'Esta proposta é válida por 2 meses e está sempre sujeita a revisão no momento da adjudicação.',
             'A quantidade de entrega poderá ter uma variação de até 10%.',
             'Condições de pagamento: 30% do valor total do pedido no momento da adjudicação; 70% nas condições habituais.'
         ],
         es: [
-            'Los precios no incluyen IVA y son válidos para una única entrega. Estos precios no incluyen gastos de transporte.',
+            'Los precios no incluyen IVA y son válidos para una única entrega.',
+            'Estos precios no incluyen gastos de transporte.',
             'Esta propuesta es válida por 2 meses y está siempre sujeta a revisión en el momento de la adjudicación.',
             'La cantidad de entrega podrá tener una variación de hasta 10%.',
             'Condiciones de pago: 30% del valor total del pedido en el momento de la adjudicación; 70% en las condiciones habituales.'
         ],
         en: [
-            'Prices do not include VAT and are valid for a single delivery. These prices do not include transport costs.',
+            'Prices do not include VAT and are valid for a single delivery.',
+            'These prices do not include transport costs.',
             'This proposal is valid for 2 months and is always subject to revision at the time of award.',
             'The delivery quantity may have a variation of up to 10%.',
             'Payment conditions: 30% of the total order value at the time of award; 70% under usual conditions.'
@@ -5604,15 +5701,63 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         totalLines += lines.length;
     });
     
-    // Calcular altura total: líneas + espacios entre párrafos + padding superior (sin padding inferior)
+    // Calcular altura total del footer: líneas + espacios entre párrafos + padding superior
     const spacesBetweenParagraphs = (footerText.length - 1) * 3; // Espacio entre párrafos
     const footerHeight = (totalLines * lineHeight) + spacesBetweenParagraphs + footerPaddingTop + footerPaddingBottom;
     
-    // Verificar si necesitamos una nueva página
-    if (currentY + footerHeight > pageHeight - margin) {
+    // Dibujar total
+    // Verificar si el total cabe en la página actual (sin reservar espacio para footer todavía)
+    if (currentY + baseRowHeight > pageHeight - margin) {
         doc.addPage();
+        // En páginas siguientes, empezar desde el margen superior (sin espacio de logos)
         currentY = margin;
     }
+    
+    // Calcular espacio necesario para footer SOLO en la última página
+    // No reservar espacio para footer en páginas anteriores - permitir más productos
+    let spaceAfterTotal = 10; // Espacio después del total (variable para poder ajustarla)
+    const totalNeededHeight = baseRowHeight + spaceAfterTotal + footerHeight;
+    
+    // Si no cabe todo en la página actual (total + footer), ajustar el espaciado
+    if (currentY + totalNeededHeight > pageHeight - margin) {
+        // Reducir el espaciado después del total si es necesario
+        const availableSpace = (pageHeight - margin) - currentY - baseRowHeight;
+        if (availableSpace >= footerHeight) {
+            // Hay espacio suficiente, solo reducir el espaciado
+            spaceAfterTotal = Math.max(5, availableSpace - footerHeight);
+        } else {
+            // No hay suficiente espacio, necesitamos ajustar más
+            // Intentar reducir el espaciado entre productos anteriores o mover el total
+            const minSpace = 5;
+            if (currentY + baseRowHeight + minSpace + footerHeight > pageHeight - margin) {
+                // Aún no cabe, necesitamos mover el total hacia arriba
+                // Reducir el espaciado de la última fila de productos
+                currentY -= 5; // Mover un poco hacia arriba
+                spaceAfterTotal = minSpace;
+            }
+        }
+    }
+
+    // Fila del total - fondo gris oscuro como el pie de página
+    doc.setFillColor(64, 64, 64); // Mismo gris oscuro que el pie de página
+    const totalRowWidth = colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice + colWidths.total + colWidths.deliveryTime;
+    doc.rect(margin, currentY, totalRowWidth, baseRowHeight, 'F');
+    
+    // Texto blanco para el total
+    drawCell(colPositions.name, currentY, colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice, baseRowHeight, t.totalProposal, { align: 'center', bold: true, fontSize: 9, textColor: whiteColor });
+    drawCell(colPositions.total, currentY, colWidths.total, baseRowHeight, `€${totalProposal.toFixed(2)}`, { align: 'center', bold: true, fontSize: 9, noWrap: true, textColor: whiteColor });
+    // Restaurar color de texto a negro
+    doc.setTextColor(0, 0, 0);
+    drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, baseRowHeight, '', { border: true });
+
+    // Agregar pie de página con condiciones legales (estilo oscuro como en la imagen)
+    // Usar el espacio calculado (puede ser reducido si no cabía)
+    let finalSpaceAfterTotal = spaceAfterTotal;
+    if (currentY + baseRowHeight + spaceAfterTotal + footerHeight > pageHeight - margin) {
+        // Ajustar el espacio para que quepa exactamente
+        finalSpaceAfterTotal = Math.max(5, (pageHeight - margin) - currentY - baseRowHeight - footerHeight);
+    }
+    currentY += baseRowHeight + finalSpaceAfterTotal;
     
     // Dibujar fondo gris oscuro (similar al de la imagen: gris oscuro sólido)
     // Color gris oscuro: RGB(64, 64, 64) o similar - más oscuro que el anterior
@@ -5679,15 +5824,32 @@ function openSendProposalModal() {
         return;
     }
 
-    // Establecer fecha por defecto como hoy
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('proposalDateInput').value = today;
+    // Configurar fecha: desde hace un mes hasta hoy
+    const today = new Date();
+    const oneMonthAgo = new Date(today);
+    oneMonthAgo.setMonth(today.getMonth() - 1); // Restar un mes
+    
+    const maxDate = today.toISOString().split('T')[0]; // Máximo: hoy
+    const minDate = oneMonthAgo.toISOString().split('T')[0]; // Mínimo: hace un mes
+    
+    const dateInput = document.getElementById('proposalDateInput');
+    if (dateInput) {
+        dateInput.value = ''; // No establecer fecha por defecto
+        dateInput.setAttribute('max', maxDate); // Máximo: hoy
+        dateInput.setAttribute('min', minDate); // Mínimo: hace un mes
+    }
 
     // Limpiar campos
     document.getElementById('clientNameInput').value = '';
-    document.getElementById('commercialNameInput').value = '';
+    const commercialSelect = document.getElementById('commercialNameInput');
+    if (commercialSelect) {
+        commercialSelect.value = '';
+    }
     document.getElementById('proposalCountryInput').value = '';
-    document.getElementById('clientNumberInput').value = '';
+    const clientNumberInput = document.getElementById('clientNumberInput');
+    if (clientNumberInput) {
+        clientNumberInput.value = '0'; // Valor por defecto: "0" (cliente no creado)
+    }
 
     // Cargar clientes y comerciales existentes para autocompletado
     loadExistingClients();
@@ -5754,30 +5916,51 @@ async function loadExistingClients() {
 }
 
 /**
- * Cargar comerciales existentes desde Supabase
+ * Lista predefinida de comerciales en orden alfabético
+ */
+const PREDEFINED_COMMERCIALS = [
+    'Adriana Gomez',
+    'Antonio Albuquerque',
+    'Claudia Cruz',
+    'Elizabeth Fernandez',
+    'Jesus Paz',
+    'Manuel Reza',
+    'Miguel Castro',
+    'Miguel Eufrasio',
+    'Olivier Moreau',
+    'Sergio Serrano',
+    'Susana Coutinho',
+    'Vasco Morais',
+    'Vera Madeira'
+];
+
+/**
+ * Cargar comerciales existentes y poblar el select
  */
 async function loadExistingCommercials() {
-    if (!window.cartManager?.supabase) {
-        console.warn('Supabase no disponible para cargar comerciales');
+    const commercialSelect = document.getElementById('commercialNameInput');
+    
+    if (!commercialSelect) {
+        console.warn('Select de comercial no encontrado');
         return;
     }
 
     try {
-        // Obtener nombres de comerciales únicos de presupuestos existentes
-        const { data, error } = await window.cartManager.supabase
-            .from('presupuestos')
-            .select('nombre_comercial')
-            .order('nombre_comercial', { ascending: true });
-
-        if (error) {
-            console.error('Error al cargar comerciales:', error);
-            return;
+        // Limpiar opciones existentes (excepto la primera opción placeholder)
+        while (commercialSelect.options.length > 1) {
+            commercialSelect.remove(1);
         }
-
-        // Obtener nombres únicos
-        const uniqueCommercials = [...new Set(data.map(p => p.nombre_comercial))].filter(Boolean);
-        existingCommercials = uniqueCommercials;
-        console.log('✅ Comerciales cargados para autocompletado:', existingCommercials.length);
+        
+        // Agregar comerciales predefinidos al select
+        PREDEFINED_COMMERCIALS.forEach(commercial => {
+            const option = document.createElement('option');
+            option.value = commercial;
+            option.textContent = commercial;
+            commercialSelect.appendChild(option);
+        });
+        
+        existingCommercials = PREDEFINED_COMMERCIALS;
+        console.log('✅ Lista predefinida de comerciales cargada en select:', existingCommercials.length);
     } catch (error) {
         console.error('Error en loadExistingCommercials:', error);
     }
@@ -5914,104 +6097,28 @@ function selectClient(clientName) {
 }
 
 /**
- * Configurar autocompletado del nombre del comercial
+ * Configurar select del nombre del comercial
+ * Ya no se usa autocompletado, ahora es un select con lista predefinida
  */
 function setupCommercialAutocomplete() {
-    const input = document.getElementById('commercialNameInput');
-    const suggestionsContainer = document.getElementById('commercialSuggestions');
-
-    if (!input || !suggestionsContainer) return;
-
-    // Remover listeners anteriores para evitar duplicados
-    const newInput = input.cloneNode(true);
-    input.parentNode.replaceChild(newInput, input);
-
-    // Agregar listeners al nuevo input
-    newInput.addEventListener('input', function(e) {
-        const value = e.target.value.toLowerCase().trim();
-        
-        if (value.length < 2) {
-            suggestionsContainer.style.display = 'none';
-            return;
-        }
-
-        // Filtrar comerciales que coincidan
-        const matches = existingCommercials.filter(commercial => 
-            commercial.toLowerCase().includes(value)
-        ).slice(0, 8); // Limitar a 8 sugerencias
-
-        if (matches.length === 0) {
-            suggestionsContainer.style.display = 'none';
-            return;
-        }
-
-        // Mostrar sugerencias
-        suggestionsContainer.innerHTML = matches.map(commercial => `
-            <div class="autocomplete-item" style="
-                padding: 12px 16px;
-                cursor: pointer;
-                border-bottom: 1px solid var(--border-color, #374151);
-                transition: background 0.2s;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            " onmouseover="this.style.background='var(--bg-hover, #374151)'" 
-               onmouseout="this.style.background='transparent'"
-               onclick="selectCommercial('${commercial.replace(/'/g, "\\'")}')">
-                <i class="fas fa-user-tie" style="color: var(--text-secondary, #9ca3af); font-size: 0.9rem;"></i>
-                <span style="color: var(--text-primary, #f9fafb);">${highlightMatch(commercial, value)}</span>
-            </div>
-        `).join('');
-
-        suggestionsContainer.style.display = 'block';
-    });
-
-    // Cerrar sugerencias al hacer click fuera
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#commercialNameInput') && !e.target.closest('#commercialSuggestions')) {
-            suggestionsContainer.style.display = 'none';
+    const select = document.getElementById('commercialNameInput');
+    
+    if (!select) return;
+    
+    // Agregar listener para guardar el comercial seleccionado
+    select.addEventListener('change', function(e) {
+        const selectedCommercial = e.target.value;
+        if (selectedCommercial) {
+            // Guardar el nombre del comercial en localStorage para recordarlo
+            localStorage.setItem('commercial_name', selectedCommercial);
         }
     });
-
-    // Manejar teclas de navegación
-    newInput.addEventListener('keydown', function(e) {
-        const items = suggestionsContainer.querySelectorAll('.autocomplete-item');
-        const activeItem = suggestionsContainer.querySelector('.autocomplete-item.active');
-        
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (!activeItem && items.length > 0) {
-                items[0].classList.add('active');
-                items[0].style.background = 'var(--bg-hover, #374151)';
-            } else if (activeItem) {
-                const index = Array.from(items).indexOf(activeItem);
-                activeItem.classList.remove('active');
-                activeItem.style.background = 'transparent';
-                if (index < items.length - 1) {
-                    items[index + 1].classList.add('active');
-                    items[index + 1].style.background = 'var(--bg-hover, #374151)';
-                }
-            }
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (activeItem) {
-                const index = Array.from(items).indexOf(activeItem);
-                activeItem.classList.remove('active');
-                activeItem.style.background = 'transparent';
-                if (index > 0) {
-                    items[index - 1].classList.add('active');
-                    items[index - 1].style.background = 'var(--bg-hover, #374151)';
-                }
-            }
-        } else if (e.key === 'Enter') {
-            if (activeItem) {
-                e.preventDefault();
-                activeItem.click();
-            }
-        } else if (e.key === 'Escape') {
-            suggestionsContainer.style.display = 'none';
-        }
-    });
+    
+    // Cargar el comercial guardado si existe
+    const savedCommercial = localStorage.getItem('commercial_name');
+    if (savedCommercial && PREDEFINED_COMMERCIALS.includes(savedCommercial)) {
+        select.value = savedCommercial;
+    }
 }
 
 /**
@@ -6131,8 +6238,8 @@ async function sendProposalToSupabase() {
         // Si se está editando, usar los datos existentes de la propuesta
         clientName = window.cartManager.editingProposalData?.nombre_cliente || '';
         commercialName = window.cartManager.editingProposalData?.nombre_comercial || '';
-        proposalDate = window.cartManager.editingProposalData?.fecha_propuesta || '';
-        clientNumber = window.cartManager.editingProposalData?.numero_cliente || '';
+        proposalDate = window.cartManager.editingProposalData?.fecha_inicial || '';
+        clientNumber = window.cartManager.editingProposalData?.numero_cliente || '0';
         // Para ediciones, obtener el país desde el campo pais de la propuesta o usar el idioma actual
         // Para ediciones, obtener el país desde el campo pais de la propuesta
         const paisFromData = window.cartManager.editingProposalData?.pais;
@@ -6146,10 +6253,17 @@ async function sendProposalToSupabase() {
     } else {
         // Si es una nueva propuesta, obtener datos del formulario
         clientName = document.getElementById('clientNameInput').value.trim();
-        commercialName = document.getElementById('commercialNameInput').value.trim();
+        const commercialSelect = document.getElementById('commercialNameInput');
+        commercialName = commercialSelect ? commercialSelect.value.trim() : '';
         proposalDate = document.getElementById('proposalDateInput').value;
         proposalCountry = document.getElementById('proposalCountryInput').value;
-        clientNumber = document.getElementById('clientNumberInput')?.value.trim() || '';
+        const clientNumberInput = document.getElementById('clientNumberInput');
+        clientNumber = clientNumberInput ? clientNumberInput.value.trim() : '';
+        
+        // Si el número de cliente está vacío, usar "0" (cliente no creado)
+        if (!clientNumber) {
+            clientNumber = '0';
+        }
 
         // Validar campos obligatorios solo para nuevas propuestas
         if (!clientName || !commercialName || !proposalDate || !proposalCountry) {
@@ -6189,8 +6303,8 @@ async function sendProposalToSupabase() {
                 id: window.cartManager.editingProposalId,
                 nombre_cliente: clientName,
                 nombre_comercial: commercialName,
-                fecha_propuesta: proposalDate,
-                numero_cliente: clientNumber || null
+                fecha_inicial: proposalDate,
+                numero_cliente: clientNumber || '0'
             };
 
             console.log('📝 Actualizando artículos de la propuesta en Supabase...', presupuesto.id);
@@ -6255,7 +6369,7 @@ async function sendProposalToSupabase() {
             // Actualizar el presupuesto con el número de cliente si cambió
             const { error: updateError } = await window.cartManager.supabase
                 .from('presupuestos')
-                .update({ numero_cliente: clientNumber || null })
+                .update({ numero_cliente: clientNumber || '0' })
                 .eq('id', window.cartManager.editingProposalId);
 
             if (updateError) {
@@ -6272,19 +6386,10 @@ async function sendProposalToSupabase() {
             }
         } else {
             // Crear nueva propuesta
-            // Verificar si solo hay un artículo y es un pedido especial
-            const allItems = window.cartManager.cart.filter(item => item.type === 'product' || item.type === 'special');
-            const specialOrders = allItems.filter(item => item.type === 'special');
-            const isOnlySpecialOrder = allItems.length === 1 && specialOrders.length === 1;
+            // Todas las propuestas se registran como "propuesta en curso"
+            const estadoInicial = 'propuesta_en_curso';
             
-            const estadoInicial = isOnlySpecialOrder ? 'propuesta_en_curso' : 'propuesta enviada';
-            
-            console.log('📋 Verificando estado inicial:', {
-                totalItems: allItems.length,
-                specialOrders: specialOrders.length,
-                isOnlySpecialOrder,
-                estadoInicial
-            });
+            console.log('📋 Estado inicial de la propuesta:', estadoInicial);
             
             // Generar código identificador de la propuesta
             const codigoPropuesta = await generateProposalCode(proposalDate, commercialName, clientName);
@@ -6295,11 +6400,11 @@ async function sendProposalToSupabase() {
             const presupuestoData = {
                 nombre_cliente: clientName,
                 nombre_comercial: commercialName,
-                fecha_propuesta: proposalDate,
+                fecha_inicial: proposalDate,
                 estado_propuesta: estadoInicial,
                 codigo_propuesta: codigoPropuesta,
                 pais: paisCompleto,
-                numero_cliente: clientNumber || null
+                numero_cliente: clientNumber || '0'
             };
 
             console.log('📤 Guardando presupuesto en Supabase...', presupuestoData);
@@ -6479,23 +6584,21 @@ async function sendProposalToSupabase() {
             (isEditing ? 'Proposal updated successfully' : 'Proposal sent successfully');
         window.cartManager.showNotification(message, 'success');
 
-        // Generar PDF automáticamente después de guardar la propuesta
-        // Usar el idioma según el país seleccionado
-        const pdfLanguage = proposalCountry || 'pt'; // 'es' para España, 'pt' para Portugal
-        try {
-            await generateProposalPDFFromSavedProposal(presupuesto.id, pdfLanguage);
-        } catch (pdfError) {
-            console.error('Error generando PDF:', pdfError);
-            // No bloquear el flujo si falla la generación del PDF
-        }
-
         // Limpiar el carrito después de enviar
         window.cartManager.clearCart();
+        
+        // Mostrar mensaje de éxito
+        const successMessage = window.cartManager.currentLanguage === 'es' ? 
+            'Propuesta guardada correctamente' : 
+            window.cartManager.currentLanguage === 'pt' ?
+            'Proposta guardada com sucesso' :
+            'Proposal saved successfully';
+        window.cartManager.showNotification(successMessage, 'success');
         
         // Redirigir a consultar propuestas después de un breve delay
         setTimeout(() => {
             window.location.href = 'consultar-propuestas.html';
-        }, 2000); // Aumentado a 2 segundos para dar tiempo a generar el PDF
+        }, 1500);
 
     } catch (error) {
         console.error('❌ Error al guardar propuesta:', error);
@@ -6526,9 +6629,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: 'Enviar Proposta',
                 clientName: 'Nome do Cliente *',
                 commercialName: 'Nome do Comercial *',
-                proposalDate: 'Data da Proposta *',
+                proposalDate: 'Data do Pedido *',
                 proposalCountry: 'País *',
-                clientNumber: 'Número de Cliente',
+                clientNumber: 'Número de Cliente *',
                 cancel: 'Cancelar',
                 send: 'Enviar Proposta'
             },
@@ -6536,9 +6639,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: 'Enviar Propuesta',
                 clientName: 'Nombre del Cliente *',
                 commercialName: 'Nombre del Comercial *',
-                proposalDate: 'Fecha de Propuesta *',
+                proposalDate: 'Fecha del Pedido *',
                 proposalCountry: 'País *',
-                clientNumber: 'Número de Cliente',
+                clientNumber: 'Número de Cliente *',
                 cancel: 'Cancelar',
                 send: 'Enviar Propuesta'
             },
@@ -6546,7 +6649,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 title: 'Send Proposal',
                 clientName: 'Client Name *',
                 commercialName: 'Commercial Name *',
-                proposalDate: 'Proposal Date *',
+                proposalDate: 'Order Date *',
                 proposalCountry: 'Country *',
                 clientNumber: 'Client Number',
                 cancel: 'Cancel',

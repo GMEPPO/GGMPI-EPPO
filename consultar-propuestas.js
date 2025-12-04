@@ -305,7 +305,7 @@ class ProposalsManager {
             const row = document.createElement('tr');
             
             // Formatear fechas
-            const fechaInicio = new Date(proposal.fecha_propuesta);
+            const fechaInicio = new Date(proposal.fecha_inicial);
             const fechaInicioFormateada = fechaInicio.toLocaleDateString(this.currentLanguage === 'es' ? 'es-ES' : 
                                                            this.currentLanguage === 'pt' ? 'pt-PT' : 'en-US');
             
@@ -349,7 +349,7 @@ class ProposalsManager {
 
             // Hacer el número de propuesta clickeable si tiene código
             const proposalNumberCell = proposal.codigo_propuesta ? 
-                `<td style="cursor: pointer; color: var(--brand-blue, #2563eb); text-decoration: underline;" onclick="window.proposalsManager.showProposalCodeBreakdown('${proposal.id}', '${proposal.codigo_propuesta}', '${(proposal.nombre_comercial || '').replace(/'/g, "\\'")}', '${(proposal.nombre_cliente || '').replace(/'/g, "\\'")}', '${proposal.fecha_propuesta}')" title="Click para ver la fórmula">${proposalNumber}</td>` :
+                `<td style="cursor: pointer; color: var(--brand-blue, #2563eb); text-decoration: underline;" onclick="window.proposalsManager.showProposalCodeBreakdown('${proposal.id}', '${proposal.codigo_propuesta}', '${(proposal.nombre_comercial || '').replace(/'/g, "\\'")}', '${(proposal.nombre_cliente || '').replace(/'/g, "\\'")}', '${proposal.fecha_inicial}')" title="Click para ver la fórmula">${proposalNumber}</td>` :
                 `<td>${proposalNumber}</td>`;
             
             row.innerHTML = `
@@ -376,8 +376,29 @@ class ProposalsManager {
                                 background-position: right 8px center;
                                 padding-right: 32px;
                             " onfocus="this.style.borderColor='var(--accent-500, #8b5cf6)'; this.style.boxShadow='0 0 0 2px rgba(139,92,246,0.2)';" onblur="this.style.borderColor='var(--border-color, #374151)'; this.style.boxShadow='none';">
-                                ${estadoNormalizado === 'propuesta_en_curso' ? `<option value="propuesta_en_curso" selected>${this.getStatusText('propuesta_en_curso')}</option>` : `<option value="propuesta_en_curso">${this.getStatusText('propuesta_en_curso')}</option>`}
-                                ${estadoNormalizado === 'propuesta_enviada' ? `<option value="propuesta_enviada" selected>${this.getStatusText('propuesta_enviada')}</option>` : `<option value="propuesta_enviada">${this.getStatusText('propuesta_enviada')}</option>`}
+                                ${(() => {
+                                    const hasPassedPropuestaEnviada = this.hasPassedThroughStatus(proposal, 'propuesta_enviada');
+                                    
+                                    let options = '';
+                                    
+                                    // "propuesta_en_curso" es un estado automático que se asigna al crear la propuesta
+                                    // No debe aparecer en el dropdown, solo se muestra si está actualmente en ese estado
+                                    if (estadoNormalizado === 'propuesta_en_curso') {
+                                        options += `<option value="propuesta_en_curso" selected disabled>${this.getStatusText('propuesta_en_curso')}</option>`;
+                                    }
+                                    
+                                    // Solo mostrar "propuesta_enviada" si no ha pasado por él antes
+                                    if (!hasPassedPropuestaEnviada) {
+                                        options += estadoNormalizado === 'propuesta_enviada' ? 
+                                            `<option value="propuesta_enviada" selected>${this.getStatusText('propuesta_enviada')}</option>` : 
+                                            `<option value="propuesta_enviada">${this.getStatusText('propuesta_enviada')}</option>`;
+                                    } else if (estadoNormalizado === 'propuesta_enviada') {
+                                        // Si está actualmente en ese estado pero ya pasó por él, mostrarlo como seleccionado pero deshabilitado
+                                        options += `<option value="propuesta_enviada" selected disabled>${this.getStatusText('propuesta_enviada')}</option>`;
+                                    }
+                                    
+                                    return options;
+                                })()}
                                 ${estadoNormalizado === 'propuesta_en_edicion' ? `<option value="propuesta_en_edicion" selected>${this.getStatusText('propuesta_en_edicion')}</option>` : `<option value="propuesta_en_edicion">${this.getStatusText('propuesta_en_edicion')}</option>`}
                                 ${estadoNormalizado === 'muestra_pedida' ? `<option value="muestra_pedida" selected>${this.getStatusText('muestra_pedida')}</option>` : `<option value="muestra_pedida">${this.getStatusText('muestra_pedida')}</option>`}
                                 ${estadoNormalizado === 'amostra_enviada' ? `<option value="amostra_enviada" selected>${this.getStatusText('amostra_enviada')}</option>` : `<option value="amostra_enviada">${this.getStatusText('amostra_enviada')}</option>`}
@@ -611,6 +632,94 @@ class ProposalsManager {
         return true;
     }
 
+    /**
+     * Verifica si una propuesta ya ha pasado por un estado específico
+     * @param {Object} proposal - La propuesta a verificar
+     * @param {string} statusToCheck - El estado a verificar (normalizado)
+     * @returns {boolean} - true si ya ha pasado por ese estado, false si no
+     */
+    hasPassedThroughStatus(proposal, statusToCheck) {
+        if (!proposal) return false;
+        
+        // Normalizar estados
+        const normalizeStatus = (status) => {
+            const s = (status || '').toLowerCase().trim();
+            if (s === 'propuesta en curso' || s === 'propuesta_en_curso') return 'propuesta_en_curso';
+            if (s === 'propuesta enviada' || s === 'propuesta_enviada') return 'propuesta_enviada';
+            return s;
+        };
+        
+        const normalizedStatusToCheck = normalizeStatus(statusToCheck);
+        const normalizedCurrentStatus = normalizeStatus(proposal.estado_propuesta);
+        
+        // Si el estado actual es el que estamos verificando, no ha "pasado" por él aún (está en él)
+        // Por lo tanto, puede seguir usándolo
+        if (normalizedCurrentStatus === normalizedStatusToCheck) {
+            return false;
+        }
+        
+        // Verificar en el historial de modificaciones
+        const historial = proposal.historial_modificaciones || [];
+        
+        // Si el historial está vacío o no tiene cambios de estado, y estamos verificando "propuesta_en_curso",
+        // significa que la propuesta fue creada inicialmente con ese estado y luego cambió a otro
+        // Por lo tanto, ya pasó por "propuesta_en_curso"
+        if (normalizedStatusToCheck === 'propuesta_en_curso') {
+            const hasStatusChanges = historial.some(reg => reg.tipo === 'cambio_estado');
+            if (!hasStatusChanges && normalizedCurrentStatus !== 'propuesta_en_curso') {
+                // La propuesta fue creada con "propuesta_en_curso" y ahora tiene otro estado
+                // Por lo tanto, ya pasó por "propuesta_en_curso"
+                return true;
+            }
+        }
+        
+        // Buscar en el historial si alguna vez cambió a ese estado
+        for (const registro of historial) {
+            if (registro.tipo === 'cambio_estado' && registro.descripcion) {
+                const descripcionLower = registro.descripcion.toLowerCase();
+                
+                // Patrones para detectar cambios a los estados específicos
+                // La descripción tiene el formato: "Estado cambiado de 'X' a 'Y'" (ES)
+                // o "Estado alterado de 'X' para 'Y'" (PT) o "Status changed from 'X' to 'Y'" (EN)
+                if (normalizedStatusToCheck === 'propuesta_en_curso') {
+                    // Verificar si cambió A "propuesta en curso" o "propuesta_en_curso"
+                    const patterns = [
+                        /a\s+["']propuesta\s+(en\s+)?curso["']/i,  // ES: a "propuesta en curso"
+                        /a\s+["']propuesta_en_curso["']/i,  // ES: a "propuesta_en_curso"
+                        /para\s+["']propuesta\s+(em\s+)?curso["']/i,  // PT: para "proposta em curso"
+                        /para\s+["']proposta\s+(em\s+)?curso["']/i,  // PT alternativo
+                        /to\s+["']proposal\s+in\s+progress["']/i,  // EN: to "proposal in progress"
+                        /changed\s+to\s+["']proposal\s+in\s+progress["']/i  // EN alternativo
+                    ];
+                    
+                    for (const pattern of patterns) {
+                        if (pattern.test(descripcionLower)) {
+                            return true;
+                        }
+                    }
+                } else if (normalizedStatusToCheck === 'propuesta_enviada') {
+                    // Verificar si cambió A "propuesta enviada" o "propuesta_enviada"
+                    const patterns = [
+                        /a\s+["']propuesta\s+enviada["']/i,  // ES: a "propuesta enviada"
+                        /a\s+["']propuesta_enviada["']/i,  // ES: a "propuesta_enviada"
+                        /para\s+["']propuesta\s+enviada["']/i,  // PT: para "proposta enviada"
+                        /para\s+["']proposta\s+enviada["']/i,  // PT alternativo
+                        /to\s+["']proposal\s+sent["']/i,  // EN: to "proposal sent"
+                        /changed\s+to\s+["']proposal\s+sent["']/i  // EN alternativo
+                    ];
+                    
+                    for (const pattern of patterns) {
+                        if (pattern.test(descripcionLower)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+
     viewProposalDetails(proposalId) {
         const proposal = this.allProposals.find(p => p.id === proposalId);
         if (!proposal) {
@@ -622,7 +731,7 @@ class ProposalsManager {
         const content = document.getElementById('proposalDetailsContent');
 
         // Formatear fechas
-        const fechaPropuesta = new Date(proposal.fecha_propuesta);
+        const fechaPropuesta = new Date(proposal.fecha_inicial);
         const fechaUltimaActualizacion = proposal.fecha_ultima_actualizacion ? 
             new Date(proposal.fecha_ultima_actualizacion) : null;
 
@@ -663,6 +772,21 @@ class ProposalsManager {
                     transition: all 0.2s;
                 " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(59,130,246,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                     <i class="fas fa-edit"></i> <span id="edit-proposal-text">${detailLabels.editProposal}</span>
+                </button>
+                <button class="btn-print-pdf" onclick="window.proposalsManager.printProposalPDF('${proposal.id}')" style="
+                    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.2s;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(239,68,68,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    <i class="fas fa-file-pdf"></i> <span id="print-pdf-text">${detailLabels.printPDF}</span>
                 </button>
                 <button class="btn-view-history" onclick="window.proposalsManager.viewModificationsHistory('${proposal.id}')" style="
                     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
@@ -1147,7 +1271,7 @@ class ProposalsManager {
             id: proposal.id,
             nombre_cliente: proposal.nombre_cliente,
             nombre_comercial: proposal.nombre_comercial,
-            fecha_propuesta: proposal.fecha_propuesta,
+            fecha_inicial: proposal.fecha_inicial,
             estado_propuesta: proposal.estado_propuesta,
             articulos: proposal.articulos || []
         };
@@ -1156,6 +1280,105 @@ class ProposalsManager {
         
         // Redirigir a la página de presupuesto
         window.location.href = `carrito-compras.html?edit=${proposalId}`;
+    }
+
+    async printProposalPDF(proposalId) {
+        const proposal = this.allProposals.find(p => p.id === proposalId);
+        if (!proposal) {
+            console.error('Propuesta no encontrada:', proposalId);
+            const message = this.currentLanguage === 'es' ? 
+                'Propuesta no encontrada' : 
+                this.currentLanguage === 'pt' ?
+                'Proposta não encontrada' :
+                'Proposal not found';
+            this.showNotification(message, 'error');
+            return;
+        }
+
+        try {
+            // Verificar si carrito-compras.js está cargado
+            if (typeof generateProposalPDFFromSavedProposal === 'undefined') {
+                // Cargar el script si no está disponible
+                await this.loadCartManagerScript();
+            }
+
+            // Obtener el idioma actual
+            const language = this.currentLanguage || 'pt';
+
+            // Mostrar notificación de carga
+            const loadingMessage = this.currentLanguage === 'es' ? 
+                'Generando PDF...' : 
+                this.currentLanguage === 'pt' ?
+                'Gerando PDF...' :
+                'Generating PDF...';
+            this.showNotification(loadingMessage, 'info');
+
+            // Generar el PDF
+            if (typeof generateProposalPDFFromSavedProposal !== 'undefined') {
+                await generateProposalPDFFromSavedProposal(proposalId, language);
+                
+                const successMessage = this.currentLanguage === 'es' ? 
+                    'PDF generado correctamente' : 
+                    this.currentLanguage === 'pt' ?
+                    'PDF gerado com sucesso' :
+                    'PDF generated successfully';
+                this.showNotification(successMessage, 'success');
+            } else {
+                throw new Error('Función de generación de PDF no disponible');
+            }
+
+        } catch (error) {
+            console.error('Error al generar PDF:', error);
+            const errorMessage = this.currentLanguage === 'es' ? 
+                `Error al generar PDF: ${error.message}` : 
+                this.currentLanguage === 'pt' ?
+                `Erro ao gerar PDF: ${error.message}` :
+                `Error generating PDF: ${error.message}`;
+            this.showNotification(errorMessage, 'error');
+        }
+    }
+
+    async loadCartManagerScript() {
+        return new Promise((resolve, reject) => {
+            // Verificar si ya está cargado
+            if (typeof generateProposalPDFFromSavedProposal !== 'undefined') {
+                resolve();
+                return;
+            }
+
+            // Verificar si el script ya está en el DOM
+            const existingScript = document.querySelector('script[src*="carrito-compras.js"]');
+            if (existingScript) {
+                // Esperar a que se cargue
+                existingScript.onload = () => resolve();
+                existingScript.onerror = () => reject(new Error('Error cargando carrito-compras.js'));
+                return;
+            }
+
+            // Cargar jsPDF primero si no está disponible
+            if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+                const jspdfScript = document.createElement('script');
+                jspdfScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                document.head.appendChild(jspdfScript);
+                
+                jspdfScript.onload = () => {
+                    // Cargar carrito-compras.js
+                    const script = document.createElement('script');
+                    script.src = 'carrito-compras.js';
+                    script.onload = () => resolve();
+                    script.onerror = () => reject(new Error('Error cargando carrito-compras.js'));
+                    document.body.appendChild(script);
+                };
+                jspdfScript.onerror = () => reject(new Error('Error cargando jsPDF'));
+            } else {
+                // Cargar carrito-compras.js directamente
+                const script = document.createElement('script');
+                script.src = 'carrito-compras.js';
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error('Error cargando carrito-compras.js'));
+                document.body.appendChild(script);
+            }
+        });
     }
 
     openDeleteConfirmModal(proposalId) {
@@ -1354,7 +1577,7 @@ class ProposalsManager {
 
             // Filtro por fecha
             if (dateFrom) {
-                const proposalDate = new Date(proposal.fecha_propuesta);
+                const proposalDate = new Date(proposal.fecha_inicial);
                 const fromDate = new Date(dateFrom);
                 if (proposalDate < fromDate) {
                     return false;
@@ -1362,7 +1585,7 @@ class ProposalsManager {
             }
 
             if (dateTo) {
-                const proposalDate = new Date(proposal.fecha_propuesta);
+                const proposalDate = new Date(proposal.fecha_inicial);
                 const toDate = new Date(dateTo);
                 toDate.setHours(23, 59, 59, 999);
                 if (proposalDate > toDate) {
@@ -1421,7 +1644,7 @@ class ProposalsManager {
 
             // Filtro por fecha
             if (dateFrom) {
-                const proposalDate = new Date(proposal.fecha_propuesta);
+                const proposalDate = new Date(proposal.fecha_inicial);
                 const fromDate = new Date(dateFrom);
                 if (proposalDate < fromDate) {
                     return false;
@@ -1429,7 +1652,7 @@ class ProposalsManager {
             }
 
             if (dateTo) {
-                const proposalDate = new Date(proposal.fecha_propuesta);
+                const proposalDate = new Date(proposal.fecha_inicial);
                 const toDate = new Date(dateTo);
                 toDate.setHours(23, 59, 59, 999);
                 if (proposalDate > toDate) {
@@ -2017,6 +2240,7 @@ class ProposalsManager {
                 clickToViewHistory: 'Clique para ver histórico',
                 total: 'Total',
                 editProposal: 'Editar Proposta',
+                printPDF: 'Imprimir PDF',
                 viewHistory: 'Ver Modificações',
                 viewStatusHistory: 'Ver alterações de estado',
                 deleteProposal: 'Eliminar',
@@ -2047,6 +2271,7 @@ class ProposalsManager {
                 clickToViewHistory: 'Click para ver historial',
                 total: 'Total',
                 editProposal: 'Editar Propuesta',
+                printPDF: 'Imprimir PDF',
                 viewHistory: 'Ver Modificaciones',
                 viewStatusHistory: 'Ver cambios de estado',
                 deleteProposal: 'Eliminar',
@@ -2077,6 +2302,7 @@ class ProposalsManager {
                 clickToViewHistory: 'Click to view history',
                 total: 'Total',
                 editProposal: 'Edit Proposal',
+                printPDF: 'Print PDF',
                 viewHistory: 'View History',
                 viewStatusHistory: 'View status changes',
                 deleteProposal: 'Delete',
@@ -2445,6 +2671,31 @@ class ProposalsManager {
             const proposal = this.allProposals.find(p => p.id === proposalId);
             const estadoAnterior = proposal?.estado_propuesta || 'desconocido';
             const historialActual = proposal?.historial_modificaciones || [];
+            
+            // Validar que no se intente volver a estados que ya se han usado
+            const newStatusLower = (newStatus || '').toLowerCase();
+            const isPropuestaEnCurso = newStatusLower === 'propuesta_en_curso' || newStatusLower === 'propuesta en curso';
+            const isPropuestaEnviada = newStatusLower === 'propuesta_enviada' || newStatusLower === 'propuesta enviada';
+            
+            if (isPropuestaEnCurso && this.hasPassedThroughStatus(proposal, 'propuesta_en_curso')) {
+                const message = this.currentLanguage === 'es' ? 
+                    'No se puede volver al estado "Propuesta en Curso" una vez que se ha salido de él' : 
+                    this.currentLanguage === 'pt' ?
+                    'Não é possível voltar ao estado "Proposta em Curso" uma vez que saiu dele' :
+                    'Cannot return to "Proposal in Progress" status once it has been left';
+                this.showNotification(message, 'error');
+                return;
+            }
+            
+            if (isPropuestaEnviada && this.hasPassedThroughStatus(proposal, 'propuesta_enviada')) {
+                const message = this.currentLanguage === 'es' ? 
+                    'No se puede volver al estado "Propuesta Enviada" una vez que se ha salido de él' : 
+                    this.currentLanguage === 'pt' ?
+                    'Não é possível voltar ao estado "Proposta Enviada" uma vez que saiu dele' :
+                    'Cannot return to "Proposal Sent" status once it has been left';
+                this.showNotification(message, 'error');
+                return;
+            }
 
             // Crear el nuevo registro de modificación para historial_modificaciones
             const descripcion = this.getStatusChangeDescription(estadoAnterior, newStatus, additionalData);
@@ -2458,6 +2709,9 @@ class ProposalsManager {
 
             const fechaCambio = new Date().toISOString();
 
+            // Si el nuevo estado es "propuesta enviada", guardar la fecha de envío
+            // (newStatusLower ya está declarado arriba)
+            
             // Actualizar TODOS los artículos del presupuesto en la tabla única
             // (ya que cada artículo contiene la información del presupuesto)
             const updateData = {
@@ -2466,6 +2720,11 @@ class ProposalsManager {
                 fecha_ultima_actualizacion: fechaCambio,
                 ...additionalData
             };
+
+            // Si el estado cambia a "propuesta enviada", guardar la fecha de envío
+            if (isPropuestaEnviada) {
+                updateData.fecha_envio_propuesta = fechaCambio;
+            }
 
             const { error } = await this.supabase
                 .from('presupuestos')
