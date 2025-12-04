@@ -177,17 +177,40 @@ class AuthManager {
      * Verificar si el usuario está autenticado
      */
     async isAuthenticated() {
-        const user = await this.getCurrentUser();
-        return user !== null;
+        try {
+            if (!this.isInitialized) {
+                await this.initialize();
+            }
+
+            const client = await this.getClient();
+            // Usar getSession() que lee de localStorage y es más confiable
+            const { data: { session } } = await client.auth.getSession();
+            
+            if (session && session.user) {
+                this.currentUser = session.user;
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('Error verificando autenticación:', error);
+            return false;
+        }
     }
 
     /**
      * Requerir autenticación (redirige a login si no está autenticado)
      */
     async requireAuth(redirectTo = 'login.html') {
+        // Esperar un momento para que la sesión se cargue desde localStorage
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const isAuth = await this.isAuthenticated();
         if (!isAuth) {
-            window.location.href = redirectTo;
+            // Solo redirigir si no estamos ya en la página de login
+            if (!window.location.pathname.includes('login.html')) {
+                window.location.href = redirectTo;
+            }
             return false;
         }
         return true;

@@ -1007,7 +1007,7 @@
 
                     if (typeof supabase !== 'undefined') {
                         this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                            auth: { persistSession: false }
+                            auth: { persistSession: true, autoRefreshToken: true }
                         });
                     } else {
                         throw new Error('Supabase library not loaded');

@@ -78,9 +78,9 @@ if (typeof UniversalSupabaseClient === 'undefined') {
             // Crear cliente con configuración optimizada
             this.client = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
                 auth: {
-                    persistSession: false, // No persistir sesión para mejor compatibilidad
-                    autoRefreshToken: false,
-                    detectSessionInUrl: false
+                    persistSession: true, // Persistir sesión para mantener login entre recargas
+                    autoRefreshToken: true, // Refrescar token automáticamente
+                    detectSessionInUrl: true // Detectar sesión en URL (para callbacks)
                 },
                 global: {
                     headers: {
