@@ -40,7 +40,6 @@ class CartManager {
         
         if (editId) {
             this.editingProposalId = editId;
-            console.log('📝 Editando propuesta:', editId);
             
             // Cargar datos de la propuesta desde localStorage o desde Supabase
             const savedData = localStorage.getItem('editing_proposal');
@@ -51,7 +50,6 @@ class CartManager {
                     // Mostrar indicador de edición después de cargar datos
                     this.showEditingIndicator();
                 } catch (error) {
-                    console.error('Error al cargar datos de propuesta:', error);
                     await this.loadProposalFromSupabase(editId);
                     // Mostrar indicador de edición después de cargar datos
                     this.showEditingIndicator();
@@ -66,7 +64,7 @@ class CartManager {
 
     async loadProposalFromSupabase(proposalId) {
         if (!this.supabase) {
-            console.error('Supabase no inicializado');
+            // No inicializado
             return;
         }
 
@@ -111,7 +109,7 @@ class CartManager {
 
             await this.loadProposalIntoCart();
         } catch (error) {
-            console.error('Error al cargar propuesta desde Supabase:', error);
+            // Error al cargar propuesta
         }
     }
 
@@ -339,7 +337,6 @@ class CartManager {
                 .single();
 
             if (fetchError) {
-                console.warn('⚠️ Error al obtener ediciones:', fetchError);
                 return;
             }
 
@@ -372,12 +369,10 @@ class CartManager {
                 .eq('id', proposalId);
 
             if (updateError) {
-                console.warn('⚠️ Error al registrar ediciones:', updateError);
-            } else {
-                console.log('✅ Ediciones registradas:', nuevoRegistro);
+                // Error al registrar ediciones, continuar sin interrumpir
             }
         } catch (error) {
-            console.error('❌ Error en registrarEdicionesPropuesta:', error);
+            // Error al registrar ediciones, continuar sin interrumpir
         }
     }
 
@@ -445,7 +440,8 @@ class CartManager {
                         : null, // Cargar color seleccionado desde la propuesta
                     observations: articulo.observaciones || '',
                     box_size: product.box_size || null,
-                    phc_ref: product.phc_ref || null
+                    phc_ref: product.phc_ref || null,
+                    logoUrl: articulo.logo_url || null
                 };
 
                 this.cart.push(cartItem);
@@ -494,7 +490,6 @@ class CartManager {
                 .order('nombre', { ascending: true });
 
             if (error) {
-                console.error('Error cargando productos exclusivos del cliente:', error);
                 return;
             }
 
@@ -504,10 +499,9 @@ class CartManager {
                 const existingIds = new Set(this.allProducts.map(p => p.id));
                 const newProducts = clientProducts.filter(p => !existingIds.has(p.id));
                 this.allProducts = [...this.allProducts, ...newProducts];
-                console.log(`✅ ${newProducts.length} productos exclusivos del cliente "${clienteNombre}" cargados`);
             }
         } catch (error) {
-            console.error('Error en loadClientExclusiveProducts:', error);
+            // Error al cargar productos exclusivos, continuar sin interrumpir
         }
     }
 
@@ -656,7 +650,6 @@ class CartManager {
                     // Agregar phc_ref si no está (importante para consulta de stock)
                     if (!item.phc_ref && productFromDB.phc_ref) {
                         item.phc_ref = productFromDB.phc_ref;
-                        console.log(`✅ phc_ref agregado al item ${item.id}: ${item.phc_ref}`);
                     }
                     // Agregar box_size si no está
                     if (!item.box_size && productFromDB.box_size) {
@@ -692,18 +685,14 @@ class CartManager {
      */
     async initializeSupabase() {
         try {
+            // Usar siempre el cliente compartido para evitar múltiples instancias
             if (window.universalSupabase) {
                 this.supabase = await window.universalSupabase.getClient();
-            } else if (typeof supabase !== 'undefined') {
-                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-                this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    auth: { persistSession: false }
-                });
+            } else {
+                throw new Error('Supabase no está disponible. Asegúrate de que supabase-config-universal.js se cargue antes.');
             }
-            console.log('✅ Supabase inicializado para búsqueda de productos');
         } catch (error) {
-            console.error('❌ Error al inicializar Supabase:', error);
+            // Error al inicializar
         }
     }
 
@@ -712,7 +701,7 @@ class CartManager {
      */
     async loadAllProducts() {
         if (!this.supabase) {
-            console.warn('⚠️ Supabase no inicializado, no se pueden cargar productos');
+            // No se pueden cargar productos
             return;
         }
 
@@ -747,7 +736,6 @@ class CartManager {
                     try {
                         priceTiers = typeof product.price_tiers === 'string' ? JSON.parse(product.price_tiers) : [product.price_tiers];
                     } catch (e) {
-                        console.warn('Error parseando price_tiers para producto', product.id, e);
                         priceTiers = [];
                     }
                 }
@@ -760,7 +748,6 @@ class CartManager {
                     try {
                         variants = typeof product.variants === 'string' ? JSON.parse(product.variants) : [];
                     } catch (e) {
-                        console.warn('Error parseando variants para producto', product.id, e);
                         variants = [];
                     }
                 }
@@ -773,7 +760,6 @@ class CartManager {
                     try {
                         variantesReferencias = typeof product.variantes_referencias === 'string' ? JSON.parse(product.variantes_referencias) : [];
                     } catch (e) {
-                        console.warn('Error parseando variantes_referencias para producto', product.id, e);
                         variantesReferencias = [];
                     }
                 }
@@ -801,11 +787,7 @@ class CartManager {
                 };
             });
 
-            console.log('✅ Productos cargados para búsqueda:', this.allProducts.length);
-            const productsWithTiers = this.allProducts.filter(p => p.price_tiers && p.price_tiers.length > 0);
-            console.log('📊 Productos con escalones de precio:', productsWithTiers.length);
         } catch (error) {
-            console.error('❌ Error al cargar productos:', error);
             this.showNotification('Error al cargar productos para búsqueda', 'error');
         }
     }
@@ -827,7 +809,6 @@ class CartManager {
                 });
                 return cart;
             } catch (e) {
-                console.error('Error al cargar el carrito:', e);
                 return [];
             }
         }
@@ -1107,13 +1088,11 @@ class CartManager {
                 deliveryElements = deliveryElement ? [deliveryElement] : [];
             } else {
                 // Si no se encuentra, intentar buscar de otra manera
-                console.log(`⚠️ No se encontró el cart-item con data-item-id="${specificItemId}"`);
                 deliveryElements = [];
             }
             
             // IMPORTANTE: Si se especificó un itemId, NO actualizar otros elementos
             if (deliveryElements.length === 0) {
-                console.log(`⚠️ No se encontró elemento de plazo de entrega para item ${specificItemId}, saltando actualización`);
                 return Promise.resolve();
             }
         } else {
@@ -1121,8 +1100,6 @@ class CartManager {
             // Esto solo debe ocurrir en la carga inicial o al cargar una propuesta
             deliveryElements = document.querySelectorAll('.delivery-time[data-phc-ref]');
         }
-        
-        console.log(`📦 Actualizando plazos de entrega según stock. Elementos encontrados: ${deliveryElements.length}${specificItemId ? ` (solo item: ${specificItemId})` : ' (todos)'}`);
         
         for (const element of deliveryElements) {
             const phcRef = element.getAttribute('data-phc-ref');
@@ -1132,8 +1109,6 @@ class CartManager {
             // Si se especificó un specificItemId, usar ese para buscar el item
             // Si no, usar el itemId del elemento
             const itemIdToUse = specificItemId || elementItemId;
-            
-            console.log(`🔍 Procesando item: phcRef="${phcRef}", quantity=${quantity}, elementItemId=${elementItemId}, itemIdToUse=${itemIdToUse}`);
             
             // Obtener el plazo original del item
             // Buscar por cartItemId primero (para items duplicados), luego por id como fallback
@@ -1148,7 +1123,6 @@ class CartManager {
             });
             
             if (!item) {
-                console.log(`⚠️ Item ${itemIdToUse} no encontrado en el carrito, saltando...`);
                 continue;
             }
             
@@ -1166,38 +1140,30 @@ class CartManager {
                 // Obtener referencia PHC
                 if (productFromDB.phc_ref) {
                     finalPhcRef = productFromDB.phc_ref;
-                    console.log(`✅ Referencia PHC obtenida desde products.phc_ref para item ${item.id}: "${finalPhcRef}"`);
                     
                     // Actualizar el item en el carrito con la referencia PHC correcta
                     if (item.phc_ref !== finalPhcRef) {
                         item.phc_ref = finalPhcRef;
                         this.saveCart();
-                        console.log(`✅ phc_ref actualizado en el carrito para item ${item.id}`);
                     }
                     
                     // Actualizar el atributo data-phc-ref en el DOM
                     element.setAttribute('data-phc-ref', finalPhcRef);
                 } else {
-                    console.log(`⚠️ Item ${item.id} no tiene referencia PHC en products.phc_ref, saltando consulta de stock...`);
                     continue;
                 }
                 
                 // Obtener plazo de entrega REAL desde products (no del item que puede estar modificado)
                 plazoNormal = productFromDB.plazoEntrega || productFromDB.plazo_entrega || item.plazoEntrega || item.plazo_entrega || '';
-                console.log(`✅ Plazo de entrega obtenido desde products para item ${item.id}: "${plazoNormal}"`);
             } else {
-                console.log(`⚠️ Item ${item.id} no encontrado en products, saltando consulta de stock...`);
                 continue;
             }
             
             try {
                 const stockDisponible = await this.getStockForProduct(finalPhcRef);
                 
-                console.log(`📊 Stock consultado para "${finalPhcRef}": ${stockDisponible} (cantidad solicitada: ${quantityToUse})`);
-                
                 // Si no hay registro en BD (null), mantener plazo normal (no actualizar)
                 if (stockDisponible === null) {
-                    console.log(`⚠️ No se encontró stock para "${finalPhcRef}", manteniendo plazo normal`);
                     continue;
                 }
                 
@@ -1211,7 +1177,6 @@ class CartManager {
                 
                 // Si tiene stock suficiente (stock >= cantidad solicitada)
                 if (stockDisponible >= quantityToUse) {
-                    console.log(`✅ Stock suficiente: ${stockDisponible} >= ${quantityToUse}, mostrando "En stock"`);
                     const span = document.createElement('span');
                     span.style.color = '#10b981';
                     span.style.fontWeight = '600';
@@ -1221,7 +1186,6 @@ class CartManager {
                 }
                 // Si tiene stock parcial (stock > 0 pero < cantidad solicitada)
                 else if (stockDisponible > 0) {
-                    console.log(`⚠️ Stock parcial: ${stockDisponible} < ${quantityToUse}`);
                     const span = document.createElement('span');
                     span.style.color = '#f59e0b';
                     span.style.fontWeight = '600';
@@ -1230,14 +1194,12 @@ class CartManager {
                 }
                 // Si no tiene stock (stock = 0), mostrar plazo normal
                 else {
-                    console.log(`❌ Sin stock: ${stockDisponible} = 0, mostrando plazo normal`);
                     const span = document.createElement('span');
                     span.textContent = plazoNormal;
                     element.appendChild(span);
                 }
             } catch (error) {
                 // Silenciar errores, mantener plazo normal
-                console.error('❌ Error actualizando plazo según stock:', error);
             }
         }
     }
@@ -1250,17 +1212,13 @@ class CartManager {
      */
     async getStockForProduct(phcRef) {
         if (!phcRef) {
-            console.log('⚠️ getStockForProduct: phcRef vacío o null');
             return null;
         }
         
         // Normalizar referencia PHC: trim y convertir a mayúsculas para comparación
         const normalizedPhcRef = String(phcRef).trim().toUpperCase();
         
-        console.log(`🔍 getStockForProduct: Buscando stock para referencia PHC="${phcRef}" (normalizado="${normalizedPhcRef}")`);
-        
         if (!normalizedPhcRef) {
-            console.log('⚠️ getStockForProduct: phcRef normalizado vacío');
             return null;
         }
         
@@ -1269,13 +1227,13 @@ class CartManager {
             try {
                 await this.initializeSupabase();
             } catch (error) {
-                console.warn('No se pudo inicializar Supabase para consultar stock:', error);
+                // No se pudo inicializar para consultar stock
                 return null;
             }
         }
         
         if (!this.supabase) {
-            console.log('⚠️ getStockForProduct: Supabase no inicializado');
+            // No inicializado
             return null;
         }
         
@@ -1289,50 +1247,36 @@ class CartManager {
             if (fetchError) {
                 // No mostrar error si la tabla no existe aún
                 if (fetchError.message && fetchError.message.includes('does not exist')) {
-                    console.log('Tabla stock_productos no existe aún, usando plazo normal');
                     return null;
                 }
-                console.warn('Error consultando stock:', fetchError);
                 return null;
             }
             
             if (!stockRecords || stockRecords.length === 0) {
-                console.log('⚠️ getStockForProduct: No hay registros en stock_productos');
                 return null;
             }
-            
-            console.log(`📋 getStockForProduct: Encontrados ${stockRecords.length} registros en stock_productos`);
             
             // Buscar coincidencia normalizada (insensible a mayúsculas/minúsculas y espacios)
             // Comparar products.phc_ref (normalizado) con stock_productos.referencia_phc (normalizado)
             const stockRecord = stockRecords.find(record => {
                 if (!record.referencia_phc) return false;
                 const recordPhcRef = String(record.referencia_phc).trim().toUpperCase();
-                const matches = recordPhcRef === normalizedPhcRef;
-                if (matches) {
-                    console.log(`✅ getStockForProduct: Coincidencia encontrada: products.phc_ref="${normalizedPhcRef}" === stock_productos.referencia_phc="${recordPhcRef}"`);
-                }
-                return matches;
+                return recordPhcRef === normalizedPhcRef;
             });
             
             if (!stockRecord) {
-                console.log(`⚠️ getStockForProduct: No se encontró stock para referencia PHC="${normalizedPhcRef}"`);
-                console.log(`📋 Referencias disponibles en stock_productos: ${stockRecords.slice(0, 10).map(r => `"${String(r.referencia_phc || '').trim().toUpperCase()}"`).join(', ')}${stockRecords.length > 10 ? '...' : ''}`);
                 return null;
             }
             
             // Retornar stock_disponible de stock_productos
             const stock = Number(stockRecord.stock_disponible);
             const finalStock = isNaN(stock) ? 0 : stock;
-            console.log(`✅ getStockForProduct: Stock encontrado para referencia PHC="${normalizedPhcRef}": ${finalStock} unidades disponibles`);
             return finalStock;
         } catch (error) {
             // No mostrar error si la tabla no existe
             if (error.message && error.message.includes('does not exist')) {
-                console.log('Tabla stock_productos no existe aún, usando plazo normal');
                 return null;
             }
-            console.error('Error consultando stock:', error);
             return null;
         }
     }
@@ -1346,7 +1290,6 @@ class CartManager {
         
         // Verificar que el contenedor existe antes de usarlo
         if (!cartItemsContainer) {
-            console.warn('⚠️ No se encontró el contenedor del carrito (cartItems). El elemento puede no existir en esta página.');
             return;
         }
         
@@ -1361,7 +1304,6 @@ class CartManager {
                 try {
                     return this.renderCartItem(item);
                 } catch (error) {
-                    console.error('❌ Error renderizando item:', item, error);
                     return ''; // Retornar string vacío si hay error para no romper el renderizado
                 }
             }).join('');
@@ -1376,7 +1318,6 @@ class CartManager {
                 }, 150);
             }
         } catch (error) {
-            console.error('❌ Error renderizando carrito:', error);
             cartItemsContainer.innerHTML = '<div style="padding: 20px; color: red;">Error al cargar el carrito. Por favor, recarga la página.</div>';
         }
     }
@@ -1596,11 +1537,9 @@ class CartManager {
                         }
                     }
                 } catch (dbError) {
-                    console.warn('Error accediendo a allProducts:', dbError);
                 }
             }
         } catch (error) {
-            console.warn('Error obteniendo variantes de referencias:', error);
             referenceVariants = [];
         }
         
@@ -1636,6 +1575,46 @@ class CartManager {
             </div>
         ` : '';
         
+        // Renderizar campo de subida de logotipo si hay una variante personalizada seleccionada
+        let logoUploadField = '';
+        if (item.selectedVariant !== null && item.selectedVariant !== undefined) {
+            const logoLabel = this.currentLanguage === 'es' ? 'Logotipo:' : this.currentLanguage === 'pt' ? 'Logotipo:' : 'Logo:';
+            const logoPlaceholder = this.currentLanguage === 'es' ? 'Subir PDF o imagen del logotipo' : this.currentLanguage === 'pt' ? 'Carregar PDF ou imagem do logotipo' : 'Upload PDF or logo image';
+            const logoUploaded = this.currentLanguage === 'es' ? 'Logotipo subido' : this.currentLanguage === 'pt' ? 'Logotipo carregado' : 'Logo uploaded';
+            const safeItemId = String(itemIdentifier).replace(/'/g, "\\'");
+            const hasLogo = item.logoUrl ? true : false;
+            
+            logoUploadField = `
+            <div class="cart-item-logo-upload" style="grid-column: 1 / -1; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--bg-gray-200);">
+                <label style="display: block; margin-bottom: 5px; font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">
+                    ${logoLabel}
+                </label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="file" 
+                           id="logo-upload-${safeItemId}" 
+                           accept=".pdf,.png,.jpg,.jpeg,.svg" 
+                           onchange="handleLogoUpload('${safeItemId}', this.files[0])"
+                           style="flex: 1; padding: 8px 12px; border: 1px solid var(--bg-gray-300); border-radius: 6px; background: var(--bg-white); color: var(--text-primary); font-size: 0.875rem; cursor: pointer;">
+                    ${hasLogo ? `
+                        <span style="color: #10b981; font-size: 0.875rem;">
+                            <i class="fas fa-check-circle"></i> ${logoUploaded}
+                        </span>
+                        <button onclick="removeLogo('${safeItemId}')" style="padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+                ${hasLogo && item.logoUrl ? `
+                    <div style="margin-top: 8px;">
+                        <a href="${item.logoUrl}" target="_blank" style="color: #1d3557; text-decoration: underline; font-size: 0.875rem;">
+                            <i class="fas fa-external-link-alt"></i> ${this.currentLanguage === 'es' ? 'Ver logotipo' : this.currentLanguage === 'pt' ? 'Ver logotipo' : 'View logo'}
+                        </a>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        }
+        
         // Renderizar selector de color (variantes de referencias) solo si hay variantes de referencias
         let colorSelector = '';
         if (referenceVariants && Array.isArray(referenceVariants) && referenceVariants.length > 0) {
@@ -1664,7 +1643,6 @@ class CartManager {
             </div>
         `;
             } catch (error) {
-                console.warn('Error generando selector de color:', error);
                 colorSelector = '';
             }
         }
@@ -1813,6 +1791,7 @@ class CartManager {
                     </button>
                 </div>
                 ${variantSelector}
+                ${logoUploadField}
                 ${colorSelector}
                 ${upsellSuggestionHTML}
                 <div class="cart-item-observations-container" id="observations-${itemIdentifier}" style="display: none;">
@@ -2466,7 +2445,6 @@ function closeAddProductModal() {
 function openAddExclusiveProductModal() {
     const modal = document.getElementById('addExclusiveProductModal');
     if (!modal || !window.cartManager || !window.cartManager.editingProposalData) {
-        console.warn('No se puede abrir el modal de productos exclusivos: no hay propuesta en edición');
         return;
     }
     
@@ -2551,7 +2529,6 @@ async function loadExclusiveProducts(clienteNombre) {
             .order('nombre', { ascending: true });
         
         if (error) {
-            console.error('Error cargando productos exclusivos:', error);
             resultsContainer.innerHTML = `
                 <div style="padding: var(--space-4); text-align: center; color: var(--text-secondary);">
                     <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: var(--space-2); opacity: 0.3;"></i>
@@ -2568,11 +2545,9 @@ async function loadExclusiveProducts(clienteNombre) {
                     <p id="no-exclusive-products-text">No hay productos exclusivos disponibles para este cliente</p>
                 </div>
             `;
-            console.log(`ℹ️ No se encontraron productos exclusivos para el cliente: "${clienteNombre}"`);
             return;
         }
         
-        console.log(`✅ ${exclusiveProducts.length} productos exclusivos encontrados para el cliente: "${clienteNombre}"`);
         
         // Normalizar productos (similar a loadAllProducts)
         const normalizedProducts = exclusiveProducts.map(product => {
@@ -2584,7 +2559,6 @@ async function loadExclusiveProducts(clienteNombre) {
                 try {
                     priceTiers = typeof product.price_tiers === 'string' ? JSON.parse(product.price_tiers) : [product.price_tiers];
                 } catch (e) {
-                    console.warn('Error parseando price_tiers para producto', product.id, e);
                     priceTiers = [];
                 }
             }
@@ -2597,7 +2571,6 @@ async function loadExclusiveProducts(clienteNombre) {
                 try {
                     variants = typeof product.variants === 'string' ? JSON.parse(product.variants) : [];
                 } catch (e) {
-                    console.warn('Error parseando variants para producto', product.id, e);
                     variants = [];
                 }
             }
@@ -2651,7 +2624,6 @@ async function loadExclusiveProducts(clienteNombre) {
         
         resultsContainer.innerHTML = resultsHTML;
     } catch (error) {
-        console.error('Error en loadExclusiveProducts:', error);
         resultsContainer.innerHTML = `
             <div style="padding: var(--space-4); text-align: center; color: var(--text-secondary);">
                 <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: var(--space-2); opacity: 0.3;"></i>
@@ -2665,9 +2637,7 @@ async function loadExclusiveProducts(clienteNombre) {
  * Seleccionar un producto exclusivo
  */
 window.selectExclusiveProduct = function(productId) {
-    console.log('selectExclusiveProduct llamado con ID:', productId);
     if (!window.cartManager) {
-        console.error('cartManager no disponible');
         return;
     }
     
@@ -2677,11 +2647,8 @@ window.selectExclusiveProduct = function(productId) {
     });
     
     if (!product) {
-        console.error('Producto exclusivo no encontrado con ID:', productId);
         return;
     }
-    
-    console.log('Producto exclusivo encontrado:', product);
     window.cartManager.selectedProduct = product;
     
     // Mostrar producto seleccionado
@@ -2730,7 +2697,6 @@ window.selectExclusiveProduct = function(productId) {
  */
 function addSelectedExclusiveProductToCart() {
     if (!window.cartManager || !window.cartManager.selectedProduct) {
-        console.error('No hay producto seleccionado');
         return;
     }
     
@@ -2831,9 +2797,7 @@ function handleProductSearch(e) {
 }
 
 function selectProduct(productId) {
-    console.log('selectProduct llamado con ID:', productId);
     if (!window.cartManager) {
-        console.error('cartManager no disponible');
         return;
     }
     
@@ -2843,12 +2807,8 @@ function selectProduct(productId) {
     });
     
     if (!product) {
-        console.error('Producto no encontrado con ID:', productId);
-        console.log('Productos disponibles:', window.cartManager.allProducts.map(p => p.id));
         return;
     }
-    
-    console.log('Producto encontrado:', product);
     window.cartManager.selectedProduct = product;
     
     // Mostrar producto seleccionado
@@ -2889,10 +2849,6 @@ function selectProduct(productId) {
 window.selectProduct = selectProduct;
 
 function addSelectedProductToCart() {
-    console.log('addSelectedProductToCart llamado');
-    console.log('cartManager:', window.cartManager);
-    console.log('selectedProduct:', window.cartManager?.selectedProduct);
-    
     if (!window.cartManager || !window.cartManager.selectedProduct) {
         const message = window.cartManager?.currentLanguage === 'es' ? 
             'Por favor selecciona un producto' : 
@@ -2918,7 +2874,6 @@ function addSelectedProductToCart() {
     
     const product = window.cartManager.selectedProduct;
     
-    console.log('Agregando producto:', product, 'cantidad:', quantity);
     
         // Agregar al carrito usando el método existente
         window.cartManager.addProduct({
@@ -2984,18 +2939,7 @@ function saveObservations(itemId, observations) {
         window.cartManager.saveCart();
         
         // Debug para verificar que se guardó
-        console.log('Observaciones guardadas para item:', itemId, 'Observaciones:', item.observations);
-        
-        // Verificar que se guardó correctamente
-        const savedCart = window.cartManager.loadCart();
-        const savedItem = savedCart.find(savedItem => 
-            String(savedItem.id) === String(itemId) || savedItem.id === itemId
-        );
-        if (savedItem) {
-            console.log('Verificación: Observaciones en localStorage:', savedItem.observations);
-        }
     } else {
-        console.error('No se encontró el item con ID:', itemId);
     }
 }
 
@@ -3380,6 +3324,8 @@ function changeProductVariant(itemId, variantIndex) {
         if (isPersonalizedVariant) {
             setTimeout(() => {
                 showPersonalizedPriceWarningBanner(itemId);
+                // Verificar si hay un logotipo guardado para este cliente
+                checkAndSuggestClientLogo(itemId);
             }, 100);
         }
         
@@ -4431,7 +4377,7 @@ function repositionNotificationsGlobal() {
  */
 async function generateProposalPDFFromSavedProposal(proposalId, language = 'pt') {
     if (!window.cartManager || !window.cartManager.supabase) {
-        console.error('CartManager o Supabase no disponible');
+        // No disponible
         return;
     }
 
@@ -4504,7 +4450,8 @@ async function generateProposalPDFFromSavedProposal(proposalId, language = 'pt')
                                      product.variants && 
                                      product.variants.length > 0) ? 0 : null,
                     selectedReferenceVariant: selectedReferenceVariant, // Color seleccionado
-                    variantes_referencias: variantesReferencias // Variantes de referencia del producto
+                    variantes_referencias: variantesReferencias, // Variantes de referencia del producto
+                    logoUrl: articulo.logo_url || null
                 });
             } else {
                 // Si no se encuentra el producto, crear un item especial
@@ -4548,6 +4495,164 @@ async function generateProposalPDFFromSavedProposal(proposalId, language = 'pt')
     }
 }
 
+/**
+ * Pre-procesar todos los logos PDF del carrito, convirtiéndolos a imágenes
+ * Esta función se ejecuta ANTES de generar el PDF para optimizar el proceso
+ * @param {Array} cartItems - Array de items del carrito
+ * @returns {Promise<Object>} - Objeto con las imágenes convertidas indexadas por logoUrl
+ */
+async function preprocessPdfLogos(cartItems) {
+    const pdfLogosMap = {}; // Mapa de URL original -> imagen convertida
+    
+    // Filtrar items que tienen logos PDF
+    const itemsWithPdfLogos = cartItems.filter(item => {
+        if (!item.logoUrl || !item.logoUrl.trim()) return false;
+        const isPdf = item.logoUrl.toLowerCase().endsWith('.pdf') || 
+                     item.logoUrl.toLowerCase().includes('.pdf');
+        return isPdf;
+    });
+    
+    if (itemsWithPdfLogos.length === 0) {
+        console.log('ℹ️ No hay logos PDF para pre-procesar');
+        return pdfLogosMap;
+    }
+    
+    console.log(`🔄 Pre-procesando ${itemsWithPdfLogos.length} logo(s) PDF...`);
+    
+    // Procesar todos los PDFs en paralelo
+    const conversionPromises = itemsWithPdfLogos.map(async (item) => {
+        const pdfUrl = item.logoUrl.trim();
+        
+        // Evitar procesar el mismo PDF múltiples veces
+        if (pdfLogosMap[pdfUrl]) {
+            console.log('⏭️ Logo PDF ya procesado:', pdfUrl);
+            return;
+        }
+        
+        try {
+            console.log(`📄 Convirtiendo logo PDF: ${pdfUrl}`);
+            const imageData = await convertPdfToImage(pdfUrl);
+            
+            if (imageData && imageData.length > 0) {
+                // Guardar con la URL exacta (sin espacios)
+                pdfLogosMap[pdfUrl] = imageData;
+                console.log(`✅ Logo PDF convertido exitosamente: ${pdfUrl} (${imageData.length} bytes)`);
+            } else {
+                console.warn(`⚠️ No se pudo convertir el logo PDF: ${pdfUrl} (imageData es null o vacío)`);
+            }
+        } catch (error) {
+            console.error(`❌ Error procesando logo PDF ${pdfUrl}:`, error);
+        }
+    });
+    
+    // Esperar a que todos los PDFs se conviertan
+    await Promise.all(conversionPromises);
+    
+    console.log(`✅ Pre-procesamiento completado. ${Object.keys(pdfLogosMap).length} logo(s) convertido(s)`);
+    
+    return pdfLogosMap;
+}
+
+/**
+ * Convertir la primera página de un PDF a imagen (base64)
+ * @param {string} pdfUrl - URL del PDF
+ * @returns {Promise<string|null>} - Data URL de la imagen o null si falla
+ */
+async function convertPdfToImage(pdfUrl) {
+    try {
+        // Esperar a que PDF.js esté disponible (puede tardar en cargar)
+        let pdfjs = null;
+        let attempts = 0;
+        const maxAttempts = 20; // Aumentar intentos
+        
+        while (!pdfjs && attempts < maxAttempts) {
+            // Intentar diferentes formas de acceder a PDF.js
+            pdfjs = window.pdfjsLibInstance || window.pdfjsLib || window.pdfjs || 
+                   (typeof pdfjsLib !== 'undefined' ? pdfjsLib : null);
+            
+            if (!pdfjs) {
+                attempts++;
+                if (attempts % 5 === 0) { // Log cada 5 intentos
+                    console.log(`⏳ Esperando PDF.js... (intento ${attempts}/${maxAttempts})`);
+                }
+                await new Promise(resolve => setTimeout(resolve, 100)); // Esperar 100ms
+            }
+        }
+        
+        if (!pdfjs) {
+            console.error('❌ PDF.js no está disponible después de esperar. Verifica que el script esté cargado correctamente.');
+            console.error('Verificando disponibilidad:', {
+                'window.pdfjsLibInstance': typeof window.pdfjsLibInstance,
+                'window.pdfjsLib': typeof window.pdfjsLib,
+                'window.pdfjs': typeof window.pdfjs,
+                'window.pdfjsLibReady': window.pdfjsLibReady,
+                'pdfjsLib': typeof pdfjsLib
+            });
+            return null;
+        }
+        
+        console.log('✅ PDF.js encontrado y disponible');
+        
+        console.log('📄 Iniciando conversión de PDF a imagen:', pdfUrl);
+        console.log('📦 PDF.js disponible:', {
+            version: pdfjs.version || 'desconocida',
+            hasGetDocument: typeof pdfjs.getDocument === 'function'
+        });
+        
+        // Configurar worker de pdf.js
+        if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+            pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            console.log('✅ Worker de PDF.js configurado');
+        }
+        
+        // Cargar el PDF con opciones para manejar CORS
+        const loadingTask = pdfjs.getDocument({
+            url: pdfUrl,
+            withCredentials: false,
+            httpHeaders: {}
+        });
+        
+        const pdf = await loadingTask.promise;
+        console.log('✅ PDF cargado, número de páginas:', pdf.numPages);
+        
+        // Obtener la primera página
+        const page = await pdf.getPage(1);
+        
+        // Configurar el viewport con una escala razonable (ajustada para logos pequeños)
+        const scale = 1.5; // Escala más pequeña para logos
+        const viewport = page.getViewport({ scale: scale });
+        
+        // Crear canvas
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        // Renderizar la página en el canvas
+        const renderContext = {
+            canvasContext: context,
+            viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+        console.log('✅ PDF renderizado en canvas');
+        
+        // Convertir canvas a imagen base64
+        const imageData = canvas.toDataURL('image/png');
+        console.log('✅ PDF convertido a imagen, tamaño:', imageData.length, 'bytes');
+        
+        return imageData;
+    } catch (error) {
+        console.error('❌ Error convirtiendo PDF a imagen:', error);
+        console.error('Detalles del error:', {
+            message: error.message,
+            stack: error.stack,
+            pdfUrl: pdfUrl
+        });
+        return null;
+    }
+}
+
 async function generateProposalPDF(selectedLanguage = null, proposalData = null) {
     // Si se proporciona proposalData, usar esos datos en lugar del carrito actual
     const useProposalData = proposalData !== null;
@@ -4568,6 +4673,11 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     if (!useProposalData) {
     window.cartManager.cart = savedCart;
     }
+    
+    // PRE-PROCESAR LOGOS PDF: Convertir todos los PDFs a imágenes ANTES de generar el PDF
+    console.log('🚀 Iniciando pre-procesamiento de logos PDF...');
+    const pdfLogosMap = await preprocessPdfLogos(savedCart);
+    console.log('✅ Pre-procesamiento de logos completado. Imágenes listas para usar en el PDF.');
     
     // Debug: verificar que las observaciones y colores estén presentes
     console.log('Carrito cargado para PDF:', savedCart.map(item => ({
@@ -4682,7 +4792,7 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     async function loadAndAddLogosToPDF() {
         try {
             if (!window.cartManager || !window.cartManager.supabase) {
-                console.warn('Supabase no disponible, saltando logos');
+                // No disponible, saltando logos
                 return;
             }
 
@@ -4693,12 +4803,12 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
                 .eq('activo', true);
 
             if (error) {
-                console.error('Error cargando logos desde Supabase:', error);
+                // Error cargando logos
                 return;
             }
 
             if (!logos || logos.length === 0) {
-                console.warn('No se encontraron logos activos en Supabase');
+                // No se encontraron logos activos
                 return;
             }
 
@@ -4897,12 +5007,12 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     // Función para dibujar un item con label arriba y valor abajo (puede tener múltiples líneas)
     function drawItemWithMultiline(label, value, maxValueWidth, startX, labelY, valueY) {
         // Dibujar label arriba (centrado)
-        doc.setFont('helvetica', 'bold');
+    doc.setFont('helvetica', 'bold');
         const labelWidth = doc.getTextWidth(label);
         doc.text(label, startX + (maxValueWidth / 2) - (labelWidth / 2), labelY);
-        
+    
         // Dibujar valor abajo
-        doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'normal');
         const valueText = value || '-';
         
         // Dividir el valor en líneas si es necesario
@@ -4971,8 +5081,16 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     startY = headerBottomY + 8;
     currentY = startY;
 
+    // Procesar cada item del carrito
+    // IMPORTANTE: Siempre recargar el carrito desde localStorage para tener los datos más recientes
+    // Esto asegura que tengamos el selectedReferenceVariant actualizado
+    const cartToProcess = useProposalData ? window.cartManager.cart : window.cartManager.loadCart();
+    
     // Calcular ancho disponible (página menos márgenes)
     const availableWidth = pageWidth - (margin * 2);
+    
+    // Verificar si hay logos en los productos
+    const hasLogos = cartToProcess.some(item => item.logoUrl && item.logoUrl.trim() !== '');
     
     // Definir anchos de columnas (ajustados para que quepan en la página)
     const colWidths = {
@@ -4982,7 +5100,8 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         quantity: 15,  // Para "Cant." o "Qtd."
         unitPrice: 16,  // Más pequeña (solo "Precio")
         total: 16,  // Más pequeña
-        deliveryTime: 18  // Más pequeña
+        deliveryTime: 18,  // Más pequeña
+        logo: hasLogos ? 20 : 0  // Columna de logo solo si hay logos
     };
 
     // Verificar que la suma de anchos no exceda el ancho disponible
@@ -5003,7 +5122,8 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         quantity: margin + colWidths.name + colWidths.photo + colWidths.description,
         unitPrice: margin + colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity,
         total: margin + colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice,
-        deliveryTime: margin + colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice + colWidths.total
+        deliveryTime: margin + colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice + colWidths.total,
+        logo: hasLogos ? margin + colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice + colWidths.total + colWidths.deliveryTime : 0
     };
 
     // Función para dibujar una celda
@@ -5267,6 +5387,9 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     // Definir color blanco una sola vez para usar en encabezados y totales
     const whiteColor = [255, 255, 255];
     
+    // Agregar traducción para "Logo"
+    const logoLabel = lang === 'pt' ? 'Logo' : lang === 'es' ? 'Logo' : 'Logo';
+    
     // Dibujar encabezados (todos centrados) - fondo gris oscuro como el pie de página
     doc.setFillColor(64, 64, 64); // Mismo gris oscuro que el pie de página
     const headerWidth = Object.values(colWidths).reduce((sum, width) => sum + width, 0);
@@ -5280,16 +5403,60 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     drawCell(colPositions.unitPrice, currentY, colWidths.unitPrice, baseRowHeight, t.unitPrice, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
     drawCell(colPositions.total, currentY, colWidths.total, baseRowHeight, t.total, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
     drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, baseRowHeight, t.deliveryTime, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+    if (hasLogos) {
+        drawCell(colPositions.logo, currentY, colWidths.logo, baseRowHeight, logoLabel, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+    }
     // Restaurar color de texto a negro para el contenido
     doc.setTextColor(0, 0, 0);
 
     currentY += baseRowHeight;
     let totalProposal = 0;
-
-    // Procesar cada item del carrito
-    // IMPORTANTE: Siempre recargar el carrito desde localStorage para tener los datos más recientes
-    // Esto asegura que tengamos el selectedReferenceVariant actualizado
-    const cartToProcess = useProposalData ? window.cartManager.cart : window.cartManager.loadCart();
+    
+    // Calcular altura del footer ANTES del bucle para poder usarlo en la verificación del último producto
+    const footerPaddingTop = 12; // Padding superior
+    const footerPaddingBottom = 0; // Sin padding inferior (pegado al final)
+    const footerTextSize = 9; // Tamaño de fuente
+    const lineHeight = 5; // Espaciado entre líneas
+    
+    // Texto del pie de página según idioma
+    const footerTexts = {
+        pt: [
+            'Preços não incluem IVA e são válidos para uma única entrega.',
+            'Estes preços não incluem despesas de transporte.',
+            'Esta proposta é válida por 2 meses e está sempre sujeita a revisão no momento da adjudicação.',
+            'A quantidade de entrega poderá ter uma variação de até 10%.',
+            'Condições de pagamento: 30% do valor total do pedido no momento da adjudicação; 70% nas condições habituais.'
+        ],
+        es: [
+            'Los precios no incluyen IVA y son válidos para una única entrega.',
+            'Estos precios no incluyen gastos de transporte.',
+            'Esta propuesta es válida por 2 meses y está siempre sujeta a revisión en el momento de la adjudicación.',
+            'La cantidad de entrega podrá tener una variación de hasta 10%.',
+            'Condiciones de pago: 30% del valor total del pedido en el momento de la adjudicación; 70% en las condiciones habituales.'
+        ],
+        en: [
+            'Prices do not include VAT and are valid for a single delivery.',
+            'These prices do not include transport costs.',
+            'This proposal is valid for 2 months and is always subject to revision at the time of award.',
+            'The delivery quantity may have a variation of up to 10%.',
+            'Payment conditions: 30% of the total order value at the time of award; 70% under usual conditions.'
+        ]
+    };
+    
+    const footerText = footerTexts[lang] || footerTexts.pt;
+    
+    // Calcular cuántas líneas necesitamos
+    doc.setFontSize(footerTextSize);
+    const maxWidth = pageWidth - (margin * 2) - (footerPaddingTop * 2);
+    let totalLines = 0;
+    footerText.forEach(text => {
+        const lines = doc.splitTextToSize(text, maxWidth);
+        totalLines += lines.length;
+    });
+    
+    // Calcular altura total del footer: líneas + espacios entre párrafos + padding superior
+    const spacesBetweenParagraphs = (footerText.length - 1) * 3; // Espacio entre párrafos
+    const footerHeight = (totalLines * lineHeight) + spacesBetweenParagraphs + footerPaddingTop + footerPaddingBottom;
     
     console.log('📦 Carrito a procesar para PDF:', cartToProcess.map(item => ({
         id: item.id,
@@ -5489,10 +5656,9 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         const descriptionLines = doc.splitTextToSize(fullDescriptionText, availableWidth);
         
         // Calcular altura considerando el espaciado entre líneas
-        // Agregar padding adicional (superior e inferior) para asegurar que todo el texto sea visible
-        // Multiplicar por 1.2 para dar un margen extra y evitar cortes
+        // Reducir padding para que las celdas se ajusten mejor al contenido
         const descriptionHeight = Math.max(
-            (descriptionLines.length * lineHeight * 1.2) + (padding * 4), 
+            (descriptionLines.length * lineHeight) + (padding * 2), 
             minRowHeight
         );
         
@@ -5562,7 +5728,8 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         });
 
         // Verificar si necesitamos una nueva página
-        // NO reservar espacio para footer en páginas intermedias - usar todo el espacio disponible
+        // SOLO verificar si el producto individual cabe (sin considerar total ni condiciones)
+        // El total y las condiciones se manejan después
         if (currentY + calculatedRowHeight > pageHeight - margin) {
             doc.addPage();
             // En páginas siguientes, empezar desde el margen superior (sin espacio de logos)
@@ -5580,6 +5747,9 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
             drawCell(colPositions.unitPrice, margin, colWidths.unitPrice, baseRowHeight, t.unitPrice, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
             drawCell(colPositions.total, margin, colWidths.total, baseRowHeight, t.total, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
             drawCell(colPositions.deliveryTime, margin, colWidths.deliveryTime, baseRowHeight, t.deliveryTime, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            if (hasLogos) {
+                drawCell(colPositions.logo, margin, colWidths.logo, baseRowHeight, logoLabel, { align: 'center', bold: true, fontSize: 8, textColor: whiteColor });
+            }
             // Restaurar color de texto a negro para el contenido
             doc.setTextColor(0, 0, 0);
             currentY = margin + baseRowHeight;
@@ -5655,109 +5825,171 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
         drawCell(colPositions.unitPrice, currentY, colWidths.unitPrice, calculatedRowHeight, `€${unitPrice.toFixed(2)}`, { align: 'center', fontSize: 8, noWrap: true });
         drawCell(colPositions.total, currentY, colWidths.total, calculatedRowHeight, `€${total.toFixed(2)}`, { align: 'center', bold: true, fontSize: 8, noWrap: true });
         drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, calculatedRowHeight, deliveryText, { align: 'center', fontSize: 7 });
+        
+        // Dibujar logo si existe
+        if (hasLogos) {
+            drawCell(colPositions.logo, currentY, colWidths.logo, calculatedRowHeight, '', { border: true });
+            
+            // Agregar logo (centrado verticalmente)
+            if (item.logoUrl && item.logoUrl.trim() !== '') {
+                try {
+                    // Verificar si es PDF o imagen
+                    const isPdf = item.logoUrl.toLowerCase().endsWith('.pdf') || item.logoUrl.toLowerCase().includes('.pdf');
+                    
+                    if (isPdf) {
+                        // Usar la imagen pre-procesada del mapa (ya convertida antes de generar el PDF)
+                        // Normalizar la URL (sin espacios) para buscar en el mapa
+                        const normalizedLogoUrl = item.logoUrl.trim();
+                        
+                        console.log('🔍 Buscando logo PDF en mapa:', {
+                            logoUrl: item.logoUrl,
+                            normalizedLogoUrl: normalizedLogoUrl,
+                            mapKeys: Object.keys(pdfLogosMap),
+                            hasInMap: !!pdfLogosMap[normalizedLogoUrl],
+                            mapSize: Object.keys(pdfLogosMap).length
+                        });
+                        
+                        const pdfImageData = pdfLogosMap[normalizedLogoUrl];
+                        
+                        if (pdfImageData && pdfImageData.length > 0) {
+                            try {
+                                const logoSize = Math.min(15, colWidths.logo - 4);
+                                const logoX = colPositions.logo + (colWidths.logo - logoSize) / 2;
+                                const logoY = currentY + (calculatedRowHeight - logoSize) / 2;
+                                
+                                // Agregar imagen pre-convertida al PDF
+                                doc.addImage(pdfImageData, 'PNG', logoX, logoY, logoSize, logoSize);
+                                console.log('✅ Logo PDF (pre-procesado) agregado al PDF correctamente');
+                            } catch (addImageError) {
+                                console.error('❌ Error agregando imagen PDF pre-procesada al documento:', addImageError);
+                                // Si falla al agregar, mostrar "PDF"
+                                doc.setFontSize(6);
+                                doc.setTextColor(0, 0, 0);
+                                const pdfTextX = colPositions.logo + colWidths.logo / 2;
+                                const pdfTextY = currentY + calculatedRowHeight / 2;
+                                doc.text('PDF', pdfTextX, pdfTextY, { align: 'center' });
+                            }
+                        } else {
+                            console.warn('⚠️ No se encontró imagen pre-procesada para el PDF:', {
+                                logoUrl: item.logoUrl,
+                                mapKeys: Object.keys(pdfLogosMap),
+                                pdfImageData: pdfImageData ? 'existe pero vacío' : 'no existe'
+                            });
+                            // Si no hay imagen pre-procesada, mostrar "PDF"
+                            doc.setFontSize(6);
+                            doc.setTextColor(0, 0, 0);
+                            const pdfTextX = colPositions.logo + colWidths.logo / 2;
+                            const pdfTextY = currentY + calculatedRowHeight / 2;
+                            doc.text('PDF', pdfTextX, pdfTextY, { align: 'center' });
+                        }
+                    } else {
+                        // Para imágenes, cargar y mostrar
+                        const logoImg = new Image();
+                        logoImg.crossOrigin = 'anonymous';
+                        await new Promise((resolve) => {
+                            logoImg.onload = () => {
+                                try {
+                                    const logoSize = Math.min(15, colWidths.logo - 4);
+                                    const logoX = colPositions.logo + (colWidths.logo - logoSize) / 2;
+                                    const logoY = currentY + (calculatedRowHeight - logoSize) / 2;
+                                    
+                                    // Crear canvas para convertir a base64 si es necesario
+                                    const canvas = document.createElement('canvas');
+                                    canvas.width = logoImg.width;
+                                    canvas.height = logoImg.height;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.drawImage(logoImg, 0, 0);
+                                    const imgData = canvas.toDataURL('image/png');
+                                    
+                                    // Agregar imagen al PDF
+                                    doc.addImage(imgData, 'PNG', logoX, logoY, logoSize, logoSize);
+                                } catch (error) {
+                                    console.error('Error adding logo image:', error);
+                                    // Si falla, mostrar "N/A"
+                                    doc.setFontSize(6);
+                                    doc.setTextColor(0, 0, 0);
+                                    doc.text('N/A', colPositions.logo + colWidths.logo / 2, currentY + calculatedRowHeight / 2, { align: 'center' });
+                                }
+                                resolve();
+                            };
+                            logoImg.onerror = () => {
+                                // Si falla la carga, mostrar "N/A"
+                                doc.setFontSize(6);
+                                doc.setTextColor(0, 0, 0);
+                                doc.text('N/A', colPositions.logo + colWidths.logo / 2, currentY + calculatedRowHeight / 2, { align: 'center' });
+                                resolve();
+                            };
+                            logoImg.src = item.logoUrl;
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading logo:', error);
+                    // Si falla, mostrar "N/A"
+                    doc.setFontSize(6);
+                    doc.setTextColor(0, 0, 0);
+                    doc.text('N/A', colPositions.logo + colWidths.logo / 2, currentY + calculatedRowHeight / 2, { align: 'center' });
+                }
+            } else {
+                // Si no hay logo, mostrar "N/A"
+                doc.setFontSize(6);
+                doc.setTextColor(0, 0, 0);
+                doc.text('N/A', colPositions.logo + colWidths.logo / 2, currentY + calculatedRowHeight / 2, { align: 'center' });
+            }
+        }
 
         currentY += calculatedRowHeight;
     }
 
-    // Calcular altura necesaria para el pie de página ANTES de dibujar el total
-    const footerPaddingTop = 12; // Padding superior
-    const footerPaddingBottom = 0; // Sin padding inferior (pegado al final)
-    const footerTextSize = 9; // Tamaño de fuente
-    const lineHeight = 5; // Espaciado entre líneas
-    
-    // Texto del pie de página según idioma
-    const footerTexts = {
-        pt: [
-            'Preços não incluem IVA e são válidos para uma única entrega.',
-            'Estes preços não incluem despesas de transporte.',
-            'Esta proposta é válida por 2 meses e está sempre sujeita a revisão no momento da adjudicação.',
-            'A quantidade de entrega poderá ter uma variação de até 10%.',
-            'Condições de pagamento: 30% do valor total do pedido no momento da adjudicação; 70% nas condições habituais.'
-        ],
-        es: [
-            'Los precios no incluyen IVA y son válidos para una única entrega.',
-            'Estos precios no incluyen gastos de transporte.',
-            'Esta propuesta es válida por 2 meses y está siempre sujeta a revisión en el momento de la adjudicación.',
-            'La cantidad de entrega podrá tener una variación de hasta 10%.',
-            'Condiciones de pago: 30% del valor total del pedido en el momento de la adjudicación; 70% en las condiciones habituales.'
-        ],
-        en: [
-            'Prices do not include VAT and are valid for a single delivery.',
-            'These prices do not include transport costs.',
-            'This proposal is valid for 2 months and is always subject to revision at the time of award.',
-            'The delivery quantity may have a variation of up to 10%.',
-            'Payment conditions: 30% of the total order value at the time of award; 70% under usual conditions.'
-        ]
-    };
-    
-    const footerText = footerTexts[lang] || footerTexts.pt;
-    
-    // Calcular cuántas líneas necesitamos
-    doc.setFontSize(footerTextSize);
-    const maxWidth = pageWidth - (margin * 2) - (footerPaddingTop * 2);
-    let totalLines = 0;
-    footerText.forEach(text => {
-        const lines = doc.splitTextToSize(text, maxWidth);
-        totalLines += lines.length;
-    });
-    
-    // Calcular altura total del footer: líneas + espacios entre párrafos + padding superior
-    const spacesBetweenParagraphs = (footerText.length - 1) * 3; // Espacio entre párrafos
-    const footerHeight = (totalLines * lineHeight) + spacesBetweenParagraphs + footerPaddingTop + footerPaddingBottom;
-    
-    // Dibujar total
-    // Verificar si el total cabe en la página actual (sin reservar espacio para footer todavía)
+    // footerHeight ya fue calculado antes del bucle, no es necesario recalcularlo
+
+    // Dibujar total - DEBE estar pegado inmediatamente después del último producto
+    // NO mover el total a una nueva página, solo verificar que cabe básicamente
     if (currentY + baseRowHeight > pageHeight - margin) {
         doc.addPage();
-        // En páginas siguientes, empezar desde el margen superior (sin espacio de logos)
         currentY = margin;
     }
     
-    // Calcular espacio necesario para footer SOLO en la última página
-    // No reservar espacio para footer en páginas anteriores - permitir más productos
-    let spaceAfterTotal = 10; // Espacio después del total (variable para poder ajustarla)
-    const totalNeededHeight = baseRowHeight + spaceAfterTotal + footerHeight;
-    
-    // Si no cabe todo en la página actual (total + footer), ajustar el espaciado
-    if (currentY + totalNeededHeight > pageHeight - margin) {
-        // Reducir el espaciado después del total si es necesario
-        const availableSpace = (pageHeight - margin) - currentY - baseRowHeight;
-        if (availableSpace >= footerHeight) {
-            // Hay espacio suficiente, solo reducir el espaciado
-            spaceAfterTotal = Math.max(5, availableSpace - footerHeight);
-        } else {
-            // No hay suficiente espacio, necesitamos ajustar más
-            // Intentar reducir el espaciado entre productos anteriores o mover el total
-            const minSpace = 5;
-            if (currentY + baseRowHeight + minSpace + footerHeight > pageHeight - margin) {
-                // Aún no cabe, necesitamos mover el total hacia arriba
-                // Reducir el espaciado de la última fila de productos
-                currentY -= 5; // Mover un poco hacia arriba
-                spaceAfterTotal = minSpace;
-            }
-        }
-    }
+    // El total se dibuja en currentY (que ya está en la posición después del último producto)
+    // NO agregar espacio antes del total
+    const spaceAfterTotal = 10; // Espacio después del total (solo para las condiciones)
 
     // Fila del total - fondo gris oscuro como el pie de página
     doc.setFillColor(64, 64, 64); // Mismo gris oscuro que el pie de página
-    const totalRowWidth = colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice + colWidths.total + colWidths.deliveryTime;
+    // Calcular ancho total incluyendo la columna de logo si existe
+    const totalRowWidth = colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice + colWidths.total + colWidths.deliveryTime + (hasLogos ? colWidths.logo : 0);
     doc.rect(margin, currentY, totalRowWidth, baseRowHeight, 'F');
     
-    // Texto blanco para el total
-    drawCell(colPositions.name, currentY, colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice, baseRowHeight, t.totalProposal, { align: 'center', bold: true, fontSize: 9, textColor: whiteColor });
-    drawCell(colPositions.total, currentY, colWidths.total, baseRowHeight, `€${totalProposal.toFixed(2)}`, { align: 'center', bold: true, fontSize: 9, noWrap: true, textColor: whiteColor });
+    // Calcular ancho de la celda combinada (desde nombre hasta precio unitario, excluyendo total, delivery y logo)
+    const combinedCellWidth = colWidths.name + colWidths.photo + colWidths.description + colWidths.quantity + colWidths.unitPrice;
+    
+    // Dibujar todas las celdas de la fila del total con bordes para que se cierre correctamente
+    // Celda combinada (nombre hasta precio unitario)
+    drawCell(colPositions.name, currentY, combinedCellWidth, baseRowHeight, t.totalProposal, { align: 'center', bold: true, fontSize: 9, textColor: whiteColor, border: true });
+    
+    // Celda del total
+    drawCell(colPositions.total, currentY, colWidths.total, baseRowHeight, `€${totalProposal.toFixed(2)}`, { align: 'center', bold: true, fontSize: 9, noWrap: true, textColor: whiteColor, border: true });
+    
+    // Celda de plazo de entrega (vacía en la fila del total)
+    drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, baseRowHeight, '', { align: 'center', border: true, textColor: whiteColor });
+    
+    // Si hay columna de logo, dibujar celda vacía con borde para cerrar correctamente
+    if (hasLogos) {
+        drawCell(colPositions.logo, currentY, colWidths.logo, baseRowHeight, '', { align: 'center', border: true, textColor: whiteColor });
+    }
     // Restaurar color de texto a negro
     doc.setTextColor(0, 0, 0);
-    drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, baseRowHeight, '', { border: true });
 
     // Agregar pie de página con condiciones legales (estilo oscuro como en la imagen)
-    // Usar el espacio calculado (puede ser reducido si no cabía)
-    let finalSpaceAfterTotal = spaceAfterTotal;
-    if (currentY + baseRowHeight + spaceAfterTotal + footerHeight > pageHeight - margin) {
-        // Ajustar el espacio para que quepa exactamente
-        finalSpaceAfterTotal = Math.max(5, (pageHeight - margin) - currentY - baseRowHeight - footerHeight);
+    // Verificar si las condiciones caben completas en la página actual
+    // Si no caben, mover SOLO las condiciones a una nueva página (el total ya está dibujado)
+    currentY += baseRowHeight + spaceAfterTotal;
+    
+    // Verificación: si no cabe el footer completo, crear nueva página SOLO para las condiciones
+    if (currentY + footerHeight > pageHeight - margin) {
+        doc.addPage();
+        currentY = margin;
+        console.log('📄 Nueva página creada para condiciones (el total ya está en la página anterior)');
     }
-    currentY += baseRowHeight + finalSpaceAfterTotal;
     
     // Dibujar fondo gris oscuro (similar al de la imagen: gris oscuro sólido)
     // Color gris oscuro: RGB(64, 64, 64) o similar - más oscuro que el anterior
@@ -5890,7 +6122,7 @@ let existingCommercials = [];
  */
 async function loadExistingClients() {
     if (!window.cartManager?.supabase) {
-        console.warn('Supabase no disponible para cargar clientes');
+        // No disponible para cargar clientes
         return;
     }
 
@@ -6307,7 +6539,6 @@ async function sendProposalToSupabase() {
                 numero_cliente: clientNumber || '0'
             };
 
-            console.log('📝 Actualizando artículos de la propuesta en Supabase...', presupuesto.id);
 
             // Obtener artículos originales antes de eliminarlos para comparar
             const { data: articulosOriginales, error: fetchError } = await window.cartManager.supabase
@@ -6407,7 +6638,6 @@ async function sendProposalToSupabase() {
                 numero_cliente: clientNumber || '0'
             };
 
-            console.log('📤 Guardando presupuesto en Supabase...', presupuestoData);
 
             const { data: newPresupuesto, error: presupuestoError } = await window.cartManager.supabase
                 .from('presupuestos')
@@ -6513,7 +6743,8 @@ async function sendProposalToSupabase() {
                     precio_personalizado: precioPersonalizado,
                     tipo_personalizacion: tipoPersonalizacion,
                     plazo_entrega: plazoEntrega,
-                    variante_referencia: varianteReferencia
+                    variante_referencia: varianteReferencia,
+                    logo_url: item.logoUrl || null
                 });
             }
         }
@@ -6521,8 +6752,9 @@ async function sendProposalToSupabase() {
         console.log('📦 Artículos a guardar:', articulos);
 
         // Insertar artículos
+        let articulosData = null;
         if (articulos.length > 0) {
-            const { data: articulosData, error: articulosError } = await window.cartManager.supabase
+            const { data: insertedArticulos, error: articulosError } = await window.cartManager.supabase
                 .from('presupuestos_articulos')
                 .insert(articulos)
                 .select();
@@ -6531,7 +6763,13 @@ async function sendProposalToSupabase() {
                 throw articulosError;
             }
 
+            articulosData = insertedArticulos;
             console.log('✅ Artículos guardados:', articulosData);
+        }
+        
+        // Renombrar logotipos temporales con el nombre del cliente después de guardar
+        if (clientName && articulosData && articulosData.length > 0) {
+            await renameTemporaryLogos(clientName, articulosData);
         }
 
         // Cerrar modal solo si se abrió (no cuando se está editando)
@@ -6940,3 +7178,811 @@ function showPriceTiersModal(itemId, productName) {
     // Mostrar modal
     modal.style.display = 'block';
 }
+
+/**
+ * Normalizar nombre del cliente para usar en nombres de archivo
+ */
+function normalizeClientName(clientName) {
+    if (!clientName) return 'cliente-sin-nombre';
+    
+    return clientName
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+        .replace(/[^a-z0-9]/g, '-') // Reemplazar caracteres especiales con guiones
+        .replace(/-+/g, '-') // Reemplazar múltiples guiones con uno solo
+        .replace(/^-|-$/g, ''); // Eliminar guiones al inicio y final
+}
+
+/**
+ * Manejar la subida de logotipo para un producto con variante personalizada
+ */
+async function handleLogoUpload(itemId, file) {
+    if (!file) return;
+    
+    if (!window.cartManager || !window.cartManager.supabase) {
+        alert('Error: No se pudo conectar con la base de datos. Por favor, recarga la página.');
+        return;
+    }
+    
+    // Validar tipo de archivo
+    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+    const validExtensions = ['.pdf', '.png', '.jpg', '.jpeg', '.svg'];
+    const fileExtensionWithDot = '.' + file.name.split('.').pop().toLowerCase();
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtensionWithDot)) {
+        const lang = window.cartManager.currentLanguage || 'es';
+        const errorMsg = lang === 'es' 
+            ? 'Tipo de archivo no válido. Solo se permiten PDF, PNG, JPG, JPEG o SVG.'
+            : lang === 'pt'
+            ? 'Tipo de arquivo inválido. Apenas são permitidos PDF, PNG, JPG, JPEG ou SVG.'
+            : 'Invalid file type. Only PDF, PNG, JPG, JPEG or SVG are allowed.';
+        alert(errorMsg);
+        return;
+    }
+    
+    // Validar tamaño (máximo 2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+        const lang = window.cartManager.currentLanguage || 'es';
+        const errorMsg = lang === 'es'
+            ? 'El archivo es demasiado grande. El tamaño máximo es 2MB.'
+            : lang === 'pt'
+            ? 'O arquivo é muito grande. O tamanho máximo é 2MB.'
+            : 'File is too large. Maximum size is 2MB.';
+        alert(errorMsg);
+        return;
+    }
+    
+    // Buscar el item en el carrito
+    const item = window.cartManager.cart.find(item => {
+        if (itemId && itemId.toString().startsWith('cart-item-')) {
+            return item.cartItemId === itemId || String(item.cartItemId) === String(itemId);
+        }
+        return (item.cartItemId && (String(item.cartItemId) === String(itemId) || item.cartItemId === itemId)) ||
+               (String(item.id) === String(itemId) || item.id === itemId);
+    });
+    
+    if (!item) {
+        alert('Error: Producto no encontrado en el carrito.');
+        return;
+    }
+    
+    // Obtener nombre del cliente del formulario (opcional, solo para verificar logotipos existentes)
+    const clientNameInput = document.getElementById('clientNameInput');
+    const clientName = clientNameInput ? clientNameInput.value.trim() : '';
+    
+    const fileExtension = file.name.split('.').pop().toLowerCase(); // Sin punto para usar en nombres de archivo
+    
+    // Crear un cliente específico para Storage sin headers globales que interfieran
+    // Esto evita que el header 'Content-Type': 'application/json' afecte las subidas de archivos
+    let storageClient;
+    try {
+        if (typeof supabase !== 'undefined' && window.SUPABASE_CONFIG) {
+            // Crear un cliente nuevo sin headers globales para Storage
+            storageClient = supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                },
+                // NO incluir 'global.headers' para que Supabase maneje automáticamente el Content-Type según el archivo
+            });
+            // Copiar la sesión del cliente principal si existe
+            if (window.cartManager.supabase && window.cartManager.supabase.auth) {
+                const { data: { session } } = await window.cartManager.supabase.auth.getSession();
+                if (session) {
+                    await storageClient.auth.setSession(session);
+                }
+            }
+        } else {
+            // Fallback al cliente compartido si no podemos crear uno nuevo
+            storageClient = window.cartManager.supabase;
+        }
+    } catch (error) {
+        console.warn('⚠️ No se pudo crear cliente específico para Storage, usando cliente compartido:', error);
+        storageClient = window.cartManager.supabase;
+    }
+    
+    // Asegurarse de que el archivo tenga el tipo MIME correcto
+    let finalFile = file;
+    if (!file.type || file.type === 'application/json' || (!file.type.startsWith('image/') && file.type !== 'application/pdf')) {
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const mimeTypeMap = {
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'gif': 'image/gif',
+            'webp': 'image/webp',
+            'svg': 'image/svg+xml',
+            'pdf': 'application/pdf'
+        };
+        const correctMimeType = mimeTypeMap[fileExt] || 'image/png';
+        console.log(`🔧 Corrigiendo tipo MIME de "${file.type}" a "${correctMimeType}"`);
+        finalFile = new File([file], file.name, { type: correctMimeType });
+    }
+    
+    try {
+        let logoUrl;
+        let clientLogos = [];
+        
+        // Si hay nombre de cliente, verificar si existen logotipos para ese cliente
+        if (clientName) {
+            const normalizedClientName = normalizeClientName(clientName);
+            
+            // Listar todos los archivos en la carpeta logos
+            const { data: existingFiles, error: listError } = await storageClient.storage
+                .from('proposal-logos')
+                .list('logos');
+            
+            // Filtrar archivos que pertenecen a este cliente
+            if (!listError && existingFiles && existingFiles.length > 0) {
+                for (const existingFile of existingFiles) {
+                    const fileNameWithoutExt = existingFile.name.replace(/\.[^/.]+$/, '');
+                    // Verificar si el nombre del archivo coincide exactamente con el nombre del cliente
+                    // o si empieza con el nombre del cliente seguido de un guión y un número
+                    const exactMatch = fileNameWithoutExt === normalizedClientName;
+                    const numberedMatch = fileNameWithoutExt.match(new RegExp(`^${normalizedClientName}-\\d+$`));
+                    
+                    if (exactMatch || numberedMatch) {
+                        const { data: urlData } = storageClient.storage
+                            .from('proposal-logos')
+                            .getPublicUrl(`logos/${existingFile.name}`);
+                        
+                        clientLogos.push({
+                            name: existingFile.name,
+                            url: urlData.publicUrl,
+                            size: existingFile.metadata?.size || 0,
+                            updated: existingFile.updated_at || existingFile.created_at || ''
+                        });
+                    }
+                }
+            }
+        }
+        
+        // Verificar si hay otros productos en el carrito que ya tienen logos cargados
+        const otherItemsWithLogos = window.cartManager.cart.filter(cartItem => 
+            cartItem.type === 'product' && 
+            cartItem.cartItemId !== item.cartItemId &&
+            cartItem.logoUrl && 
+            cartItem.logoUrl.trim() !== ''
+        );
+        
+        // Si existen logotipos para este cliente O hay otros productos con logos, mostrar modal
+        if (clientLogos.length > 0 || otherItemsWithLogos.length > 0) {
+            // Combinar logos del cliente con logos de otros productos del carrito
+            const allAvailableLogos = [...clientLogos];
+            
+            // Agregar logos de otros productos del carrito (sin duplicados)
+            otherItemsWithLogos.forEach(otherItem => {
+                if (otherItem.logoUrl && !allAvailableLogos.find(l => l.url === otherItem.logoUrl)) {
+                    allAvailableLogos.push({
+                        name: otherItem.name || 'Producto',
+                        url: otherItem.logoUrl,
+                        size: 0,
+                        updated: '',
+                        isFromCart: true
+                    });
+                }
+            });
+            
+            // Mostrar modal con logotipos existentes (del cliente y de otros productos)
+            const selectedLogo = await showClientLogosModal(clientName, allAvailableLogos, file);
+            
+            if (selectedLogo === null) {
+                // Usuario canceló
+                return;
+            } else if (selectedLogo === 'new') {
+                // Usuario quiere subir un nuevo logotipo
+                // Generar nombre temporal basado en timestamp e ID del item
+                const timestamp = Date.now();
+                const itemIdForFile = item.cartItemId || item.id || 'item';
+                const tempFileName = `logos/temp-${timestamp}-${itemIdForFile}.${fileExtension}`;
+                
+                // Subir nuevo logotipo con nombre temporal
+                const { data, error } = await storageClient.storage
+                    .from('proposal-logos')
+                    .upload(tempFileName, finalFile, {
+                        cacheControl: '3600',
+                        upsert: false,
+                        contentType: finalFile.type
+                    });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                // Obtener URL pública
+                const { data: urlData } = storageClient.storage
+                    .from('proposal-logos')
+                    .getPublicUrl(tempFileName);
+                
+                logoUrl = urlData.publicUrl;
+            } else {
+                // Usuario seleccionó un logotipo existente
+                logoUrl = selectedLogo;
+            }
+        } else {
+            // No hay logotipos existentes o no hay nombre de cliente
+            // Generar nombre temporal basado en timestamp e ID del item
+            const timestamp = Date.now();
+            const itemIdForFile = item.cartItemId || item.id || 'item';
+            const tempFileName = `logos/temp-${timestamp}-${itemIdForFile}.${fileExtension}`;
+            
+            // Subir logotipo con nombre temporal
+            const { data, error } = await storageClient.storage
+                .from('proposal-logos')
+                .upload(tempFileName, finalFile, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: finalFile.type
+                });
+            
+            if (error) {
+                throw error;
+            }
+            
+            // Obtener URL pública
+            const { data: urlData } = storageClient.storage
+                .from('proposal-logos')
+                .getPublicUrl(tempFileName);
+            
+            logoUrl = urlData.publicUrl;
+        }
+        
+        // Guardar URL en el item del carrito (solo para este producto específico)
+        item.logoUrl = logoUrl;
+        window.cartManager.saveCart();
+        window.cartManager.renderCart();
+        
+        const lang = window.cartManager.currentLanguage || 'es';
+        const successMsg = lang === 'es'
+            ? 'Logotipo subido correctamente.'
+            : lang === 'pt'
+            ? 'Logotipo carregado com sucesso.'
+            : 'Logo uploaded successfully.';
+        
+        showQuickNotification(successMsg);
+        
+    } catch (error) {
+        console.error('Error subiendo logotipo:', error);
+        const lang = window.cartManager.currentLanguage || 'es';
+        const errorMsg = lang === 'es'
+            ? 'Error al subir el logotipo: ' + error.message
+            : lang === 'pt'
+            ? 'Erro ao carregar o logotipo: ' + error.message
+            : 'Error uploading logo: ' + error.message;
+        alert(errorMsg);
+    }
+}
+
+/**
+ * Extraer ruta del archivo desde la URL del logo
+ * @param {string} url - URL del logo
+ * @returns {string|null} - Ruta del archivo o null si no se puede extraer
+ */
+function extractLogoFilePathFromUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    
+    // Patrón: https://[project].supabase.co/storage/v1/object/public/proposal-logos/logos/[filename]
+    const match = url.match(/\/storage\/v1\/object\/public\/proposal-logos\/(.+)$/);
+    if (match && match[1]) {
+        return decodeURIComponent(match[1]);
+    }
+    
+    // Si la URL ya es una ruta relativa (logos/filename.jpg o temp-...)
+    if (url.startsWith('logos/') || url.startsWith('temp-')) {
+        return url;
+    }
+    
+    return null;
+}
+
+/**
+ * Eliminar logo del bucket de Supabase Storage
+ * @param {string} logoUrl - URL del logo a eliminar
+ * @returns {Promise<boolean>} - true si se eliminó correctamente, false en caso contrario
+ */
+async function deleteLogoFromStorage(logoUrl) {
+    if (!logoUrl) return false;
+    
+    try {
+        const filePath = extractLogoFilePathFromUrl(logoUrl);
+        if (!filePath) {
+            console.warn('⚠️ No se pudo extraer la ruta del logo desde la URL:', logoUrl);
+            return false;
+        }
+        
+        // Crear cliente específico para Storage
+        let storageClient;
+        if (typeof supabase !== 'undefined' && window.SUPABASE_CONFIG) {
+            storageClient = supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            });
+            // Copiar sesión si existe
+            if (window.cartManager && window.cartManager.supabase && window.cartManager.supabase.auth) {
+                const { data: { session } } = await window.cartManager.supabase.auth.getSession();
+                if (session) {
+                    await storageClient.auth.setSession(session);
+                }
+            }
+        } else if (window.cartManager && window.cartManager.supabase) {
+            storageClient = window.cartManager.supabase;
+        } else {
+            console.warn('⚠️ Cliente de Supabase no disponible');
+            return false;
+        }
+        
+        if (!storageClient || !storageClient.storage) {
+            console.warn('⚠️ Cliente de Storage no disponible');
+            return false;
+        }
+        
+        const { error } = await storageClient.storage
+            .from('proposal-logos')
+            .remove([filePath]);
+        
+        if (error) {
+            console.error('❌ Error al eliminar logo del bucket:', error);
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('❌ Error al eliminar logo del bucket:', error);
+        return false;
+    }
+}
+
+/**
+ * Remover logotipo de un producto
+ */
+async function removeLogo(itemId) {
+    if (!window.cartManager) {
+        alert('Error: Sistema de carrito no disponible.');
+        return;
+    }
+    
+    const item = window.cartManager.cart.find(item => {
+        if (itemId && itemId.toString().startsWith('cart-item-')) {
+            return item.cartItemId === itemId || String(item.cartItemId) === String(itemId);
+        }
+        return (item.cartItemId && (String(item.cartItemId) === String(itemId) || item.cartItemId === itemId)) ||
+               (String(item.id) === String(itemId) || item.id === itemId);
+    });
+    
+    if (!item) {
+        alert('Error: Producto no encontrado en el carrito.');
+        return;
+    }
+    
+    const lang = window.cartManager.currentLanguage || 'es';
+    const confirmMsg = lang === 'es'
+        ? '¿Estás seguro de que deseas eliminar el logotipo?'
+        : lang === 'pt'
+        ? 'Tem certeza de que deseja remover o logotipo?'
+        : 'Are you sure you want to remove the logo?';
+    
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    // Obtener la URL del logo antes de eliminarlo
+    const logoUrl = item.logoUrl;
+    
+    // Eliminar el logo del bucket de Supabase Storage si existe
+    if (logoUrl) {
+        const deleted = await deleteLogoFromStorage(logoUrl);
+        if (!deleted) {
+            const lang = window.cartManager.currentLanguage || 'es';
+            const warningMsg = lang === 'es'
+                ? 'El logotipo se eliminó del carrito, pero no se pudo eliminar del almacenamiento. Puede que ya haya sido eliminado.'
+                : lang === 'pt'
+                ? 'O logotipo foi removido do carrinho, mas não foi possível removê-lo do armazenamento. Pode já ter sido removido.'
+                : 'The logo was removed from the cart, but could not be removed from storage. It may have already been deleted.';
+            console.warn('⚠️', warningMsg);
+        }
+    }
+    
+    // Eliminar URL del logotipo del item
+    delete item.logoUrl;
+    window.cartManager.saveCart();
+    window.cartManager.renderCart();
+    
+    const successMsg = lang === 'es'
+        ? 'Logotipo eliminado.'
+        : lang === 'pt'
+        ? 'Logotipo removido.'
+        : 'Logo removed.';
+    
+    showQuickNotification(successMsg);
+}
+
+/**
+ * Verificar si existe un logotipo guardado para el cliente y sugerir usarlo
+ */
+async function checkAndSuggestClientLogo(itemId) {
+    if (!window.cartManager || !window.cartManager.supabase) {
+        return;
+    }
+    
+    // Obtener nombre del cliente del formulario (opcional)
+    const clientNameInput = document.getElementById('clientNameInput');
+    const clientName = clientNameInput ? clientNameInput.value.trim() : '';
+    
+    // Si no hay nombre de cliente, no buscar logotipos existentes
+    if (!clientName) {
+        return;
+    }
+    
+    // Buscar el item en el carrito
+    const item = window.cartManager.cart.find(item => {
+        if (itemId && itemId.toString().startsWith('cart-item-')) {
+            return item.cartItemId === itemId || String(item.cartItemId) === String(itemId);
+        }
+        return (item.cartItemId && (String(item.cartItemId) === String(itemId) || item.cartItemId === itemId)) ||
+               (String(item.id) === String(itemId) || item.id === itemId);
+    });
+    
+    if (!item || item.logoUrl) {
+        return; // Item no encontrado o ya tiene logotipo
+    }
+    
+    // Normalizar nombre del cliente
+    const normalizedClientName = normalizeClientName(clientName);
+    
+    try {
+        // Buscar logotipos existentes para este cliente
+        // Listar todos los archivos en la carpeta logos
+        const { data: existingFiles, error: listError } = await window.cartManager.supabase.storage
+            .from('proposal-logos')
+            .list('logos');
+        
+        if (listError || !existingFiles || existingFiles.length === 0) {
+            return; // No hay logotipos para este cliente
+        }
+        
+        // Filtrar archivos que pertenecen a este cliente
+        const clientLogos = [];
+        for (const file of existingFiles) {
+            const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+            // Verificar si el nombre del archivo coincide exactamente con el nombre del cliente
+            // o si empieza con el nombre del cliente seguido de un guión y un número
+            const exactMatch = fileNameWithoutExt === normalizedClientName;
+            const numberedMatch = fileNameWithoutExt.match(new RegExp(`^${normalizedClientName}-\\d+$`));
+            
+            if (exactMatch || numberedMatch) {
+                const { data: urlData } = window.cartManager.supabase.storage
+                    .from('proposal-logos')
+                    .getPublicUrl(`logos/${file.name}`);
+                
+                clientLogos.push({
+                    name: file.name,
+                    url: urlData.publicUrl
+                });
+            }
+        }
+        
+        if (clientLogos.length > 0) {
+            // Si hay múltiples logotipos, mostrar modal
+            // Si hay solo uno, preguntar directamente
+            if (clientLogos.length === 1) {
+                const lang = window.cartManager.currentLanguage || 'es';
+                const confirmMsg = lang === 'es'
+                    ? `Se encontró un logotipo guardado para el cliente "${clientName}". ¿Deseas usarlo para este producto?`
+                    : lang === 'pt'
+                    ? `Foi encontrado um logotipo salvo para o cliente "${clientName}". Deseja usá-lo para este produto?`
+                    : `A saved logo was found for client "${clientName}". Do you want to use it for this product?`;
+                
+                const useExisting = confirm(confirmMsg);
+                
+                if (useExisting) {
+                    // Aplicar el logotipo existente
+                    item.logoUrl = clientLogos[0].url;
+                    window.cartManager.saveCart();
+                    window.cartManager.renderCart();
+                    
+                    const successMsg = lang === 'es'
+                        ? 'Logotipo del cliente aplicado correctamente.'
+                        : lang === 'pt'
+                        ? 'Logotipo do cliente aplicado com sucesso.'
+                        : 'Client logo applied successfully.';
+                    
+                    showQuickNotification(successMsg);
+                }
+            } else {
+                // Múltiples logotipos - mostrar modal (aunque no hay archivo nuevo, solo para seleccionar)
+                // En este caso, no se puede subir uno nuevo desde aquí, solo seleccionar existente
+                const selectedLogo = await showClientLogosModal(clientName, clientLogos, null);
+                
+                if (selectedLogo && selectedLogo !== 'new' && selectedLogo !== null) {
+                    item.logoUrl = selectedLogo;
+                    window.cartManager.saveCart();
+                    window.cartManager.renderCart();
+                    
+                    const lang = window.cartManager.currentLanguage || 'es';
+                    const successMsg = lang === 'es'
+                        ? 'Logotipo del cliente aplicado correctamente.'
+                        : lang === 'pt'
+                        ? 'Logotipo do cliente aplicado com sucesso.'
+                        : 'Client logo applied successfully.';
+                    
+                    showQuickNotification(successMsg);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error verificando logotipo del cliente:', error);
+        // No mostrar error al usuario, solo registrar en consola
+    }
+}
+
+/**
+ * Mostrar modal con logotipos existentes del cliente
+ */
+async function showClientLogosModal(clientName, clientLogos, newFile) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('clientLogoModal');
+        const modalBody = document.getElementById('clientLogoModalBody');
+        const modalTitle = document.getElementById('clientLogoModalTitle');
+        
+        if (!modal || !modalBody || !modalTitle) {
+            // Si no existe el modal, usar confirm simple
+            const lang = window.cartManager.currentLanguage || 'es';
+            const confirmMsg = lang === 'es'
+                ? `Ya existen ${clientLogos.length} logotipo(s) guardado(s) para el cliente "${clientName}". ¿Deseas subir un nuevo logotipo?`
+                : lang === 'pt'
+                ? `Já existem ${clientLogos.length} logotipo(s) salvo(s) para o cliente "${clientName}". Deseja carregar um novo logotipo?`
+                : `${clientLogos.length} logo(s) already exist for client "${clientName}". Do you want to upload a new logo?`;
+            
+            const uploadNew = confirm(confirmMsg);
+            if (uploadNew) {
+                resolve('new');
+            } else {
+                // Usar el primer logotipo existente
+                resolve(clientLogos[0].url);
+            }
+            return;
+        }
+        
+        const lang = window.cartManager.currentLanguage || 'es';
+        const translations = {
+            es: {
+                title: clientName ? `Logotipos del Cliente: ${clientName}` : 'Logotipos Disponibles',
+                subtitle: 'Selecciona un logotipo existente o sube uno nuevo',
+                selectExisting: 'Usar este logotipo',
+                uploadNew: 'Subir nuevo logotipo',
+                cancel: 'Cancelar',
+                noPreview: 'Vista previa no disponible',
+                fromPreviousProduct: ' (de producto anterior)',
+                fromClient: ' (del cliente)'
+            },
+            pt: {
+                title: clientName ? `Logotipos do Cliente: ${clientName}` : 'Logotipos Disponíveis',
+                subtitle: 'Selecione um logotipo existente ou carregue um novo',
+                selectExisting: 'Usar este logotipo',
+                uploadNew: 'Carregar novo logotipo',
+                cancel: 'Cancelar',
+                noPreview: 'Pré-visualização não disponível',
+                fromPreviousProduct: ' (de produto anterior)',
+                fromClient: ' (do cliente)'
+            },
+            en: {
+                title: clientName ? `Client Logos: ${clientName}` : 'Available Logos',
+                subtitle: 'Select an existing logo or upload a new one',
+                selectExisting: 'Use this logo',
+                uploadNew: 'Upload new logo',
+                cancel: 'Cancel',
+                noPreview: 'Preview not available',
+                fromPreviousProduct: ' (from previous product)',
+                fromClient: ' (from client)'
+            }
+        };
+        
+        const t = translations[lang] || translations.es;
+        modalTitle.textContent = t.title;
+        
+        // Crear HTML del modal
+        let logosHTML = `<p style="margin-bottom: 20px; color: var(--text-secondary);">${t.subtitle}</p>`;
+        logosHTML += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px;">';
+        
+        clientLogos.forEach((logo, index) => {
+            const isImage = logo.url.match(/\.(jpg|jpeg|png|gif|svg)$/i);
+            const isPdf = logo.url.match(/\.pdf$/i);
+            const logoLabel = logo.isFromCart ? 
+                `${logo.name}${t.fromPreviousProduct || ' (de producto anterior)'}` : 
+                (logo.name || `Logo ${index + 1}${t.fromClient || ' (del cliente)'}`);
+            
+            logosHTML += `
+                <div style="border: 2px solid var(--bg-gray-300); border-radius: 8px; padding: 15px; text-align: center; background: var(--bg-white);">
+                    <div style="height: 150px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; background: var(--bg-gray-50); border-radius: 4px; overflow: hidden;">
+                        ${isImage ? 
+                            `<img src="${logo.url}" alt="Logo ${index + 1}" style="max-width: 100%; max-height: 100%; object-fit: contain;" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-image\\' style=\\'font-size: 3rem; color: var(--text-secondary);\\'></i>'">` :
+                            isPdf ?
+                            `<div style="text-align: center;">
+                                <i class="fas fa-file-pdf" style="font-size: 3rem; color: #ef4444; margin-bottom: 10px;"></i>
+                                <p style="font-size: 0.875rem; color: var(--text-secondary);">${t.noPreview}</p>
+                            </div>` :
+                            `<i class="fas fa-file" style="font-size: 3rem; color: var(--text-secondary);"></i>`
+                        }
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 8px; min-height: 30px; display: flex; align-items: center; justify-content: center; word-break: break-word;">
+                        ${logoLabel}
+                    </div>
+                    <button onclick="selectClientLogo('${logo.url}')" 
+                            style="width: 100%; padding: 10px; background: #1d3557; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
+                        ${t.selectExisting}
+                    </button>
+                </div>
+            `;
+        });
+        
+        logosHTML += '</div>';
+        
+        // Solo mostrar botón de "Subir nuevo" si hay un archivo nuevo para subir
+        const showUploadNewButton = newFile !== null && newFile !== undefined;
+        
+        logosHTML += `
+            <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid var(--bg-gray-200); padding-top: 20px;">
+                <button onclick="closeClientLogoModal()" 
+                        style="padding: 10px 20px; background: var(--bg-gray-200); color: var(--text-primary); border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem;">
+                    ${t.cancel}
+                </button>
+                ${showUploadNewButton ? `
+                    <button onclick="selectClientLogo('new')" 
+                            style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
+                        ${t.uploadNew}
+                    </button>
+                ` : ''}
+            </div>
+        `;
+        
+        modalBody.innerHTML = logosHTML;
+        
+        // Guardar el file y resolver la promesa
+        window._pendingLogoUpload = {
+            file: newFile,
+            resolve: resolve
+        };
+        
+        // Mostrar modal
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    });
+}
+
+/**
+ * Seleccionar un logotipo del modal
+ */
+function selectClientLogo(logoUrl) {
+    const modal = document.getElementById('clientLogoModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+    
+    if (window._pendingLogoUpload && window._pendingLogoUpload.resolve) {
+        window._pendingLogoUpload.resolve(logoUrl);
+        window._pendingLogoUpload = null;
+    }
+}
+
+/**
+ * Cerrar modal de logotipos del cliente
+ */
+function closeClientLogoModal() {
+    const modal = document.getElementById('clientLogoModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+    
+    if (window._pendingLogoUpload && window._pendingLogoUpload.resolve) {
+        window._pendingLogoUpload.resolve(null);
+        window._pendingLogoUpload = null;
+    }
+}
+
+/**
+ * Renombrar logotipos temporales con el nombre del cliente al guardar la propuesta
+ */
+async function renameTemporaryLogos(clientName, articulosData) {
+    if (!window.cartManager || !window.cartManager.supabase || !clientName) {
+        return;
+    }
+    
+    try {
+        const normalizedClientName = normalizeClientName(clientName);
+        
+        // Listar todos los archivos temporales
+        const { data: allFiles, error: listError } = await window.cartManager.supabase.storage
+            .from('proposal-logos')
+            .list('logos');
+        
+        if (listError || !allFiles) {
+            return;
+        }
+        
+        // Filtrar archivos temporales
+        const tempFiles = allFiles.filter(f => f.name.startsWith('temp-'));
+        
+        if (tempFiles.length === 0) {
+            return; // No hay archivos temporales
+        }
+        
+        // Crear mapa de URLs temporales a nuevos nombres
+        const logoRenames = new Map();
+        let counter = 1;
+        
+        for (const tempFile of tempFiles) {
+            const fileExtension = tempFile.name.split('.').pop().toLowerCase();
+            let newFileName;
+            
+            // Verificar si ya existe un logotipo con el nombre base del cliente
+            const baseFileName = `${normalizedClientName}.${fileExtension}`;
+            const existingBase = allFiles.find(f => f.name === baseFileName);
+            
+            if (!existingBase) {
+                // No existe, usar nombre base
+                newFileName = baseFileName;
+            } else {
+                // Existe, buscar siguiente número disponible
+                while (allFiles.find(f => f.name === `${normalizedClientName}-${counter}.${fileExtension}`)) {
+                    counter++;
+                }
+                newFileName = `${normalizedClientName}-${counter}.${fileExtension}`;
+                counter++;
+            }
+            
+            const oldPath = `logos/${tempFile.name}`;
+            const newPath = `logos/${newFileName}`;
+            
+            // Obtener URL antigua
+            const { data: oldUrlData } = window.cartManager.supabase.storage
+                .from('proposal-logos')
+                .getPublicUrl(oldPath);
+            
+            // Mover/renombrar archivo
+            const { data: moveData, error: moveError } = await window.cartManager.supabase.storage
+                .from('proposal-logos')
+                .move(oldPath, newPath);
+            
+            if (!moveError) {
+                // Obtener nueva URL
+                const { data: newUrlData } = window.cartManager.supabase.storage
+                    .from('proposal-logos')
+                    .getPublicUrl(newPath);
+                
+                logoRenames.set(oldUrlData.publicUrl, newUrlData.publicUrl);
+            }
+        }
+        
+        // Actualizar URLs en los artículos guardados
+        if (logoRenames.size > 0 && articulosData) {
+            for (const articulo of articulosData) {
+                if (articulo.logo_url && logoRenames.has(articulo.logo_url)) {
+                    const newUrl = logoRenames.get(articulo.logo_url);
+                    
+                    // Actualizar en la BD
+                    await window.cartManager.supabase
+                        .from('presupuestos_articulos')
+                        .update({ logo_url: newUrl })
+                        .eq('id', articulo.id);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error renombrando logotipos temporales:', error);
+        // No mostrar error al usuario, solo registrar en consola
+    }
+}
+
+window.handleLogoUpload = handleLogoUpload;
+window.removeLogo = removeLogo;
+window.checkAndSuggestClientLogo = checkAndSuggestClientLogo;
+window.selectClientLogo = selectClientLogo;
+window.closeClientLogoModal = closeClientLogoModal;

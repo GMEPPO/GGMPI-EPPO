@@ -67,6 +67,26 @@
             color: var(--text-primary);
             margin-bottom: var(--space-4);
             font-size: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--bg-gray-200);
+            position: relative;
+        }
+        .form-section h2::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 1.5rem;
+            background: var(--primary-color, #1d3557);
+            margin-right: 0.75rem;
+            vertical-align: middle;
+        }
+        .required {
+            font-weight: 600;
+        }
+        .required span {
+            color: #ef4444;
+            margin-left: 4px;
+        }
             font-weight: 600;
         }
         .form-grid {
@@ -90,7 +110,11 @@
         }
         label.required::after {
             content: ' *';
-            color: var(--danger-500);
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .required {
+            font-weight: 600;
         }
         input, select, textarea {
             padding: var(--space-3) var(--space-4);
@@ -496,19 +520,23 @@
             <div class="form-section">
                 <h2>Información Básica</h2>
                 <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="modelo" class="required">Nombre del Producto <span style="color: #ef4444;">*</span></label>
+                        <input type="text" id="modelo" name="modelo" placeholder="Ej. Secador Premium 5400" required>
+                    </div>
                     <div class="form-group">
                         <label for="marca">Marca</label>
                         <input type="text" id="marca" name="marca" placeholder="Ej. VALERA" list="marcas">
                     </div>
                     <datalist id="marcas"></datalist>
                     <div class="form-group">
-                        <label for="categoria" class="required">Categoría</label>
+                        <label for="categoria" class="required">Categoría <span style="color: #ef4444;">*</span></label>
                         <select id="categoria" name="categoria" required>
                             <option value="">Cargando categorías...</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="mercado" class="required">Mercado</label>
+                        <label for="mercado" class="required">Mercado <span style="color: #ef4444;">*</span></label>
                         <select id="mercado" name="mercado" required>
                             <option value="">Selecciona un mercado...</option>
                             <option value="PT">Portugal (PT)</option>
@@ -559,17 +587,13 @@
             <div class="form-section">
                 <h2>Descripciones</h2>
                 <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label for="modelo" class="required">Nombre del Producto</label>
-                        <input type="text" id="modelo" name="modelo" placeholder="Ej. Secador Premium 5400" required>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="descripcionEs" class="required">Descripción (Español)</label>
+                    <div class="form-group full-width" id="descripcionEsContainer">
+                        <label for="descripcionEs" class="required">Descripción (Español) <span style="color: #ef4444;">*</span></label>
                         <textarea id="descripcionEs" name="descripcionEs" placeholder="Describe el producto en español" required></textarea>
                     </div>
-                    <div class="form-group full-width">
-                        <label for="descripcionPt">Descrição (Português)</label>
-                        <textarea id="descripcionPt" name="descripcionPt" placeholder="Descreva o produto em português"></textarea>
+                    <div class="form-group full-width" id="descripcionPtContainer" style="display: none; width: 100%;">
+                        <label for="descripcionPt" class="required">Descrição (Português) <span style="color: #ef4444;">*</span></label>
+                        <textarea id="descripcionPt" name="descripcionPt" placeholder="Descreva o produto em português" required style="width: 100%; min-height: 100px;"></textarea>
                     </div>
                 </div>
             </div>
@@ -587,7 +611,7 @@
                 <h2>Multimedia</h2>
                 <div class="form-grid">
                     <div class="form-group full-width">
-                        <label for="foto" class="required">Imagen Principal</label>
+                        <label for="foto" class="required">Imagen Principal <span style="color: #ef4444;">*</span></label>
                         <input type="file" id="foto" name="foto" accept="image/*" onchange="handleImageFileChange('foto')" style="margin-bottom: 10px;">
                         <input type="hidden" id="fotoRequired" value="true">
                         <div id="fotoPreview" style="margin-top: 10px; display: none;">
@@ -622,26 +646,19 @@
                 </div>
             </div>
 
-            <!-- Plazo de Entrega -->
+            <!-- Especificaciones del Producto -->
             <div class="form-section">
-                <h2>Plazo de Entrega</h2>
+                <h2>Especificaciones del Producto</h2>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="plazoEntrega" class="required">Plazo de Entrega</label>
+                        <label for="plazoEntrega" class="required">Plazo de Entrega <span style="color: #ef4444;">*</span></label>
                         <input type="text" id="plazoEntrega" name="plazoEntrega" placeholder="Ej: 15-20 días, 2-3 semanas, Inmediato" required>
                     </div>
-                </div>
-            </div>
-
-            <!-- Referencia y Embalaje -->
-            <div class="form-section">
-                <h2>Referencia y Embalaje</h2>
-                <div class="form-grid">
                     <div class="form-group">
-                        <label for="phcRef">Referencia PHC</label>
-                        <input type="text" id="phcRef" name="phcRef" placeholder="Ej: PHC-12345">
+                        <label for="peso" class="required">Peso (kg) <span style="color: #ef4444;">*</span></label>
+                        <input type="number" id="peso" name="peso" step="0.01" min="0" placeholder="Ej: 2.50" required>
                         <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Referencia opcional del producto en el sistema PHC
+                            Peso del producto en kilogramos
                         </small>
                     </div>
                     <div class="form-group">
@@ -651,60 +668,6 @@
                             Si se especifica, el producto solo se podrá comprar en múltiplos de esta cantidad (48, 96, 144, etc.). Dejar vacío para permitir cualquier cantidad.
                         </small>
                     </div>
-                </div>
-            </div>
-
-            <!-- Fornecedor y Área de Negocio -->
-            <div class="form-section">
-                <h2>Fornecedor y Área de Negocio</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="nombreFornecedor">Nombre de Fornecedor</label>
-                        <input type="text" id="nombreFornecedor" name="nombreFornecedor" placeholder="Ej: Fornecedor ABC">
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Nombre del fornecedor/proveedor del producto (opcional)
-                        </small>
-                    </div>
-                    <div class="form-group">
-                        <label for="referenciaFornecedor">Referencia Fornecedor</label>
-                        <input type="text" id="referenciaFornecedor" name="referenciaFornecedor" placeholder="Ej: FORN-001">
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Referencia del producto en el sistema del fornecedor (opcional)
-                        </small>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="areaNegocio" class="required">Área de Negocio</label>
-                        <select id="areaNegocio" name="areaNegocio" required>
-                            <option value="">Selecciona un área de negocio...</option>
-                            <option value="accesorios_personalizados">Accesorios Personalizados</option>
-                            <option value="cosmetica_personalizada">Cosmética Personalizada</option>
-                            <option value="equipamiento">Equipamiento</option>
-                        </select>
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Área de negocio del producto (obligatorio)
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Variantes de Referencias -->
-            <div class="form-section">
-                <h2>Variantes de Referencias</h2>
-                <div id="variantesReferenciasContainer">
-                    <!-- Se llenará dinámicamente -->
-                </div>
-                <button type="button" class="btn btn-add" onclick="addVarianteReferencia()" style="margin-top: 15px;">
-                    <i class="fas fa-plus"></i> Agregar Variante de Referencia
-                </button>
-                <small style="color: #6b7280; margin-top: 10px; display: block;">
-                    Agrega variantes de referencias para diferentes colores o versiones del producto (opcional)
-                </small>
-            </div>
-
-            <!-- Zonas del Producto -->
-            <div class="form-section">
-                <h2>Zonas del Producto</h2>
-                <div class="form-grid">
                     <div class="form-group full-width">
                         <label id="zones-label">Zonas donde funciona el producto</label>
                         <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
@@ -732,9 +695,63 @@
                 </div>
             </div>
 
-            <!-- Variantes y Precios -->
+            <!-- Referencias y Proveedores -->
             <div class="form-section">
-                <h2>Variantes y Precios</h2>
+                <h2>Referencias y Proveedores</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="phcRef">Referencia PHC</label>
+                        <input type="text" id="phcRef" name="phcRef" placeholder="Ej: PHC-12345">
+                        <small style="color: #6b7280; margin-top: 5px; display: block;">
+                            Referencia opcional del producto en el sistema PHC
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="nombreFornecedor">Nombre de Fornecedor</label>
+                        <input type="text" id="nombreFornecedor" name="nombreFornecedor" placeholder="Ej: Fornecedor ABC">
+                        <small style="color: #6b7280; margin-top: 5px; display: block;">
+                            Nombre del fornecedor/proveedor del producto (opcional)
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="referenciaFornecedor">Referencia Fornecedor</label>
+                        <input type="text" id="referenciaFornecedor" name="referenciaFornecedor" placeholder="Ej: FORN-001">
+                        <small style="color: #6b7280; margin-top: 5px; display: block;">
+                            Referencia del producto en el sistema del fornecedor (opcional)
+                        </small>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="areaNegocio" class="required">Área de Negocio <span style="color: #ef4444;">*</span></label>
+                        <select id="areaNegocio" name="areaNegocio" required>
+                            <option value="">Selecciona un área de negocio...</option>
+                            <option value="accesorios_personalizados">Accesorios Personalizados</option>
+                            <option value="cosmetica_personalizada">Cosmética Personalizada</option>
+                            <option value="equipamiento">Equipamiento</option>
+                        </select>
+                        <small style="color: #6b7280; margin-top: 5px; display: block;">
+                            Área de negocio del producto (obligatorio)
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referencias y Colores -->
+            <div class="form-section">
+                <h2>Referencias y Colores</h2>
+                <div id="variantesReferenciasContainer">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+                <button type="button" class="btn btn-add" onclick="addVarianteReferencia()" style="margin-top: 15px;">
+                    <i class="fas fa-plus"></i> Agregar Variante de Referencia
+                </button>
+                <small style="color: #6b7280; margin-top: 10px; display: block;">
+                    Agrega variantes de referencias para diferentes colores o versiones del producto (opcional)
+                </small>
+            </div>
+
+            <!-- Precios y Variantes -->
+            <div class="form-section">
+                <h2>Precios y Variantes</h2>
                 <div id="variantsContainer">
                     <!-- Variante Base (sin variante) -->
                     <div class="variant-section" data-variant-id="base">
@@ -772,8 +789,8 @@
     </main>
 
     <!-- Modal para Gestionar Categorías del Home -->
-    <div id="homeCategoryModal" class="modal">
-        <div class="modal-content" style="max-width: 900px;">
+    <div id="homeCategoryModal" class="modal" onclick="handleModalOverlayClick(event)">
+        <div class="modal-content" style="max-width: 900px;" onclick="event.stopPropagation();">
             <div class="modal-header">
                 <h2>Categorías del Home</h2>
                 <button class="close-modal" onclick="closeHomeCategoryManager()">&times;</button>
@@ -1360,6 +1377,10 @@
             if (window.translationSystem && window.translationSystem.changeLanguage) {
                 window.translationSystem.changeLanguage(savedLang);
             }
+            // Actualizar traducciones del formulario
+            if (window.updateProductFormTranslations) {
+                window.updateProductFormTranslations();
+            }
             
             // Actualizar botones de idioma
             document.querySelectorAll('.flag-btn').forEach(btn => {
@@ -1392,6 +1413,11 @@
                     btn.classList.add('active');
                 }
             });
+            
+            // Actualizar traducciones del formulario
+            if (window.updateProductFormTranslations) {
+                window.updateProductFormTranslations();
+            }
             
             // Actualizar traducciones del formulario
             if (window.updateProductFormTranslations) {

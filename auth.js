@@ -19,21 +19,17 @@ class AuthManager {
         }
 
         try {
-            // Obtener cliente Supabase
+            // Obtener cliente Supabase - usar siempre el cliente compartido
             if (window.universalSupabase) {
                 this.supabase = await window.universalSupabase.getClient();
-            } else if (typeof supabase !== 'undefined') {
-                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-                this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: true
-                    }
-                });
             } else {
-                throw new Error('Supabase no está disponible');
+                // Esperar un momento para que universalSupabase se inicialice
+                await new Promise(resolve => setTimeout(resolve, 200));
+                if (window.universalSupabase) {
+                    this.supabase = await window.universalSupabase.getClient();
+                } else {
+                    throw new Error('Supabase no está disponible. Asegúrate de que supabase-config-universal.js se cargue antes.');
+                }
             }
 
             // Verificar sesión actual
@@ -54,7 +50,6 @@ class AuthManager {
             this.isInitialized = true;
             return this.supabase;
         } catch (error) {
-            console.error('Error inicializando AuthManager:', error);
             throw error;
         }
     }
@@ -89,7 +84,6 @@ class AuthManager {
                 session: data.session
             };
         } catch (error) {
-            console.error('Error en login:', error);
             return {
                 success: false,
                 error: error.message
@@ -119,7 +113,6 @@ class AuthManager {
                 session: data.session
             };
         } catch (error) {
-            console.error('Error en registro:', error);
             return {
                 success: false,
                 error: error.message
@@ -142,7 +135,6 @@ class AuthManager {
                 success: true
             };
         } catch (error) {
-            console.error('Error en logout:', error);
             return {
                 success: false,
                 error: error.message
@@ -168,7 +160,6 @@ class AuthManager {
             this.currentUser = user;
             return user;
         } catch (error) {
-            console.error('Error obteniendo usuario actual:', error);
             return null;
         }
     }
@@ -193,7 +184,6 @@ class AuthManager {
             
             return false;
         } catch (error) {
-            console.error('Error verificando autenticación:', error);
             return false;
         }
     }
@@ -232,7 +222,6 @@ class AuthManager {
                 success: true
             };
         } catch (error) {
-            console.error('Error enviando email de recuperación:', error);
             return {
                 success: false,
                 error: error.message
@@ -256,7 +245,6 @@ class AuthManager {
                 success: true
             };
         } catch (error) {
-            console.error('Error actualizando contraseña:', error);
             return {
                 success: false,
                 error: error.message
@@ -277,7 +265,6 @@ class AuthManager {
             // Por ahora, usamos signUp normal que requiere confirmación de email
             return await this.signUp(email, password, metadata);
         } catch (error) {
-            console.error('Error creando usuario con Admin:', error);
             return {
                 success: false,
                 error: error.message

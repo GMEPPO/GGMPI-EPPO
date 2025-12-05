@@ -14,6 +14,44 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- PDF.js para convertir PDFs a imágenes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" onload="console.log('✅ Script PDF.js cargado en consultar-propuestas'); window.pdfjsLibReady = true;" onerror="console.error('❌ Error cargando PDF.js');"></script>
+    <script>
+        // Verificar que PDF.js se cargó correctamente
+        function checkPdfJsLoaded() {
+            // Intentar múltiples formas de acceder a PDF.js
+            const pdfjs = window.pdfjsLib || window.pdfjs || (typeof pdfjsLib !== 'undefined' ? pdfjsLib : null);
+            
+            if (pdfjs) {
+                console.log('✅ PDF.js disponible en consultar-propuestas:', {
+                    version: pdfjs.version || 'desconocida',
+                    hasGetDocument: typeof pdfjs.getDocument === 'function'
+                });
+                // Configurar worker por defecto
+                if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+                    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                }
+                window.pdfjsLibReady = true;
+                window.pdfjsLibInstance = pdfjs;
+                return true;
+            }
+            return false;
+        }
+        
+        // Verificar inmediatamente
+        if (checkPdfJsLoaded()) {
+            console.log('✅ PDF.js ya está disponible en consultar-propuestas');
+        } else {
+            // Si no está disponible, esperar a que se cargue
+            window.addEventListener('load', function() {
+                if (checkPdfJsLoaded()) {
+                    console.log('✅ PDF.js cargado después del evento load en consultar-propuestas');
+                } else {
+                    console.error('❌ PDF.js no se cargó correctamente después del evento load en consultar-propuestas');
+                }
+            });
+        }
+    </script>
     <script src="supabase-config-universal.js"></script>
     <script src="translation-system.js"></script>
     <script src="auth.js"></script>
@@ -1041,6 +1079,24 @@
             </div>
             <div id="proposalDetailsContent">
                 <!-- Se llenará dinámicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver logotipos de la propuesta -->
+    <div class="modal-overlay" id="proposalLogosModal">
+        <div class="modal" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="logos-modal-title">Logotipos de la Propuesta</h3>
+                <button class="modal-close" onclick="closeProposalLogosModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="proposalLogosContent">
+                <!-- Se llenará dinámicamente -->
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeProposalLogosModal()" id="close-logos-modal-btn">Cerrar</button>
             </div>
         </div>
     </div>

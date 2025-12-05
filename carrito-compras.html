@@ -63,6 +63,44 @@
     <!-- Librerías para generar PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- PDF.js para convertir PDFs a imágenes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" onload="console.log('✅ Script PDF.js cargado'); window.pdfjsLibReady = true;" onerror="console.error('❌ Error cargando PDF.js');"></script>
+    <script>
+        // Verificar que PDF.js se cargó correctamente
+        function checkPdfJsLoaded() {
+            // Intentar múltiples formas de acceder a PDF.js
+            const pdfjs = window.pdfjsLib || window.pdfjs || (typeof pdfjsLib !== 'undefined' ? pdfjsLib : null);
+            
+            if (pdfjs) {
+                console.log('✅ PDF.js disponible:', {
+                    version: pdfjs.version || 'desconocida',
+                    hasGetDocument: typeof pdfjs.getDocument === 'function'
+                });
+                // Configurar worker por defecto
+                if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+                    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                }
+                window.pdfjsLibReady = true;
+                window.pdfjsLibInstance = pdfjs;
+                return true;
+            }
+            return false;
+        }
+        
+        // Verificar inmediatamente
+        if (checkPdfJsLoaded()) {
+            console.log('✅ PDF.js ya está disponible');
+        } else {
+            // Si no está disponible, esperar a que se cargue
+            window.addEventListener('load', function() {
+                if (checkPdfJsLoaded()) {
+                    console.log('✅ PDF.js cargado después del evento load');
+                } else {
+                    console.error('❌ PDF.js no se cargó correctamente después del evento load');
+                }
+            });
+        }
+    </script>
     <style>
         /* Menú desplegable hamburguesa */
         .menu-dropdown {
@@ -1867,5 +1905,18 @@
     <script src="theme-common.js"></script>
     <!-- Modal para seleccionar idioma del PDF -->
 
-</body>
+    <!-- Modal para seleccionar logotipo existente del cliente -->
+    <div id="clientLogoModal" class="modal-overlay" style="display: none;" onclick="if(event.target === this) closeClientLogoModal()">
+        <div class="modal" style="max-width: 800px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title" id="clientLogoModalTitle">Logotipos del Cliente</h2>
+                <button class="modal-close" onclick="closeClientLogoModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="clientLogoModalBody" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    </body>
 </html>

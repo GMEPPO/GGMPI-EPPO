@@ -660,15 +660,15 @@
                         return;
                     }
 
-                    const SUPABASE_URL = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url) || 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                    const SUPABASE_ANON_KEY = (window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.anonKey) ||
-                        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-
-                    this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                        auth: { persistSession: true, autoRefreshToken: true }
-                    });
+                    // Esperar un momento para que universalSupabase se inicialice
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    if (window.universalSupabase) {
+                        this.supabase = await window.universalSupabase.getClient();
+                    } else {
+                        throw new Error('Supabase no está disponible. Asegúrate de que supabase-config-universal.js se cargue antes.');
+                    }
                 } catch (error) {
-                    console.error('❌ No se pudo inicializar Supabase:', error);
+                    // No se pudo inicializar
                     throw error;
                 }
             }

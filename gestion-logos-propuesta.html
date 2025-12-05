@@ -220,8 +220,8 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/@supabase/supabase-js@2" onload="console.log('✅ Script de Supabase CDN cargado')" onerror="console.error('❌ Error cargando script de Supabase CDN')"></script>
-    <script src="supabase-config-universal.js" onload="console.log('✅ Script de configuración universal cargado')" onerror="console.error('❌ Error cargando script de configuración universal')"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-config-universal.js"></script>
     <script src="stock-warning.js"></script>
     <script>
         let supabase = null;
@@ -249,7 +249,7 @@
         async function initSupabase() {
             try {
                 // Esperar a que Supabase esté disponible
-                console.log('Esperando a que Supabase se cargue...');
+                // Esperando a que se cargue...
                 const isAvailable = await waitForSupabase();
                 
                 if (!isAvailable) {
@@ -260,29 +260,23 @@
                 if (window.universalSupabase) {
                     try {
                         supabase = await window.universalSupabase.getClient();
-                        console.log('✅ Supabase inicializado con configuración universal');
+                        // Inicializado
                         return supabase;
                     } catch (error) {
-                        console.warn('Error usando configuración universal, intentando método manual:', error);
+                        // Error usando configuración universal, intentando método manual
                     }
                 }
 
-                // Fallback: crear cliente manualmente
-                const supabaseLib = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
-                
-                if (supabaseLib && supabaseLib.createClient) {
-                    const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-                    supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                        auth: { persistSession: false }
-                    });
-                    console.log('✅ Supabase inicializado manualmente');
+                // Esperar un momento para que universalSupabase se inicialice
+                await new Promise(resolve => setTimeout(resolve, 200));
+                if (window.universalSupabase) {
+                    supabase = await window.universalSupabase.getClient();
                     return supabase;
                 }
 
-                throw new Error('Supabase.createClient no está disponible. Verifica que el script de Supabase se haya cargado correctamente.');
+                throw new Error('Supabase no está disponible. Asegúrate de que supabase-config-universal.js se cargue antes.');
             } catch (error) {
-                console.error('Error inicializando Supabase:', error);
+                // Error inicializando
                 alert('Error al inicializar Supabase: ' + error.message + '\n\nPor favor, recarga la página.');
                 return null;
             }

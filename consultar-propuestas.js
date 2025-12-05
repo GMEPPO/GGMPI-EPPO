@@ -19,7 +19,7 @@ class ProposalsManager {
         await this.initializeSupabase();
             
             if (!this.supabase) {
-                console.error('❌ Supabase no se inicializó correctamente');
+                // No se inicializó correctamente
                 this.showLoadingError('No se pudo conectar con la base de datos');
                 return;
             }
@@ -62,7 +62,7 @@ class ProposalsManager {
 
     async loadAllProducts() {
         if (!this.supabase) {
-            console.warn('⚠️ Supabase no inicializado, no se pueden cargar productos');
+            // No se pueden cargar productos
             return;
         }
 
@@ -118,24 +118,20 @@ class ProposalsManager {
 
     async initializeSupabase() {
         try {
-            console.log('🔄 Inicializando Supabase...');
+            // Usar siempre el cliente compartido para evitar múltiples instancias
             if (window.universalSupabase) {
-                console.log('📦 Usando universalSupabase');
                 this.supabase = await window.universalSupabase.getClient();
-            } else if (typeof supabase !== 'undefined') {
-                console.log('📦 Usando supabase global');
-                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-                this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    auth: { persistSession: false }
-                });
             } else {
-                console.error('❌ No se encontró cliente Supabase disponible');
-                throw new Error('No se encontró cliente Supabase');
+                // Esperar un momento para que universalSupabase se inicialice
+                await new Promise(resolve => setTimeout(resolve, 200));
+                if (window.universalSupabase) {
+                    this.supabase = await window.universalSupabase.getClient();
+                } else {
+                    throw new Error('No se encontró cliente Supabase. Asegúrate de que supabase-config-universal.js se cargue antes.');
+                }
             }
-            console.log('✅ Supabase inicializado para consulta de propuestas');
         } catch (error) {
-            console.error('❌ Error al inicializar Supabase:', error);
+            // Error al inicializar
             throw error;
         }
     }
@@ -144,7 +140,7 @@ class ProposalsManager {
         console.log('📋 loadProposals() llamado');
         
         if (!this.supabase) {
-            console.error('❌ Supabase no inicializado en loadProposals');
+            // No inicializado en loadProposals
             this.showLoadingError('Error: No se pudo conectar con la base de datos');
             return;
         }
@@ -164,7 +160,6 @@ class ProposalsManager {
             if (noProposals) noProposals.style.display = 'none';
 
             // Cargar presupuestos con sus artículos (sistema original con tablas separadas)
-            console.log('🔄 Cargando presupuestos desde Supabase...');
             const { data: presupuestos, error: presupuestosError } = await this.supabase
                 .from('presupuestos')
                 .select('*')
@@ -322,7 +317,7 @@ class ProposalsManager {
             // Estado
             const statusClass = this.getStatusClass(proposal.estado_propuesta);
             const statusText = this.getStatusText(proposal.estado_propuesta);
-            
+
             // Normalizar el valor del estado para el select (manejar variaciones como "propuesta enviada" vs "propuesta_enviada")
             const normalizeStatusValue = (status) => {
                 if (!status) return 'propuesta_enviada';
@@ -351,7 +346,7 @@ class ProposalsManager {
             const proposalNumberCell = proposal.codigo_propuesta ? 
                 `<td style="cursor: pointer; color: var(--brand-blue, #2563eb); text-decoration: underline;" onclick="window.proposalsManager.showProposalCodeBreakdown('${proposal.id}', '${proposal.codigo_propuesta}', '${(proposal.nombre_comercial || '').replace(/'/g, "\\'")}', '${(proposal.nombre_cliente || '').replace(/'/g, "\\'")}', '${proposal.fecha_inicial}')" title="Click para ver la fórmula">${proposalNumber}</td>` :
                 `<td>${proposalNumber}</td>`;
-            
+
             row.innerHTML = `
                 ${proposalNumberCell}
                 <td>${fechaInicioFormateada}</td>
@@ -753,9 +748,18 @@ class ProposalsManager {
             return sum + (parseFloat(art.precio) || 0) * (parseInt(art.cantidad) || 0);
         }, 0);
 
+        // Verificar si hay logos en los artículos
+        const logos = proposal.articulos
+            .filter(art => art.logo_url && art.logo_url.trim() !== '')
+            .map(art => ({
+                nombre: art.nombre_articulo || 'Sin nombre',
+                logoUrl: art.logo_url,
+                cantidad: art.cantidad || 0
+            }));
+
         // Traducciones para los detalles
         const detailLabels = this.getDetailLabels();
-        
+
         content.innerHTML = `
             <div class="proposal-actions" style="display: flex; gap: 12px; flex-wrap: wrap;">
                 <button class="btn-edit-proposal" onclick="window.proposalsManager.editProposal('${proposal.id}')" style="
@@ -788,6 +792,23 @@ class ProposalsManager {
                 " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(239,68,68,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
                     <i class="fas fa-file-pdf"></i> <span id="print-pdf-text">${detailLabels.printPDF}</span>
                 </button>
+                ${logos.length > 0 ? `
+                <button class="btn-view-logos" onclick="window.proposalsManager.viewProposalLogos('${proposal.id}')" style="
+                    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.2s;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245,158,11,0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    <i class="fas fa-image"></i> <span id="view-logos-text">${this.currentLanguage === 'es' ? 'Ver Logotipos' : this.currentLanguage === 'pt' ? 'Ver Logotipos' : 'View Logos'} (${logos.length})</span>
+                </button>
+                ` : ''}
                 <button class="btn-view-history" onclick="window.proposalsManager.viewModificationsHistory('${proposal.id}')" style="
                     background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
                     color: white;
@@ -852,7 +873,7 @@ class ProposalsManager {
                     <div class="detail-label">${detailLabels.total}</div>
                     <div class="detail-value">€${total.toFixed(2)}</div>
                 </div>
-            </div>
+                </div>
             
             <!-- Sección de Información Adicional -->
             <div class="additional-details-section" style="margin: var(--space-6) 0; padding: var(--space-4); background: var(--bg-gray-50, #f9fafb); border-radius: var(--radius-lg, 12px); border: 1px solid var(--bg-gray-200, #e5e7eb);">
@@ -1114,7 +1135,6 @@ class ProposalsManager {
                     </div>
                 </div>
             </div>
-            ${this.generateProgressBar(proposal)}
 
             <div class="comments-section" style="margin: var(--space-6) 0; padding: var(--space-4); background: var(--bg-gray-50, #f9fafb); border-radius: var(--radius-lg, 12px); border: 1px solid var(--bg-gray-200, #e5e7eb);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
@@ -1917,311 +1937,6 @@ class ProposalsManager {
         }
     }
 
-    /**
-     * Generar barra de progreso dinámica para la propuesta
-     */
-    generateProgressBar(proposal) {
-        // Definir el orden de los estados para determinar la secuencia correcta
-        const statusOrder = [
-            'propuesta_en_curso',
-            'propuesta_enviada',
-            'propuesta_en_edicion',
-            'muestra_pedida',
-            'amostra_enviada',
-            'aguarda_dossier',
-            'aguarda_aprovacao_dossier',
-            'aguarda_creacion_cliente',
-            'aguarda_creacion_codigo_phc',
-            'aguarda_pagamento',
-            'encomenda_en_curso',
-            'encomenda_concluida',
-            'rejeitada'
-        ];
-
-        // Normalizar el estado
-        const normalizeStatus = (status) => {
-            if (!status) return 'propuesta_enviada';
-            const statusLower = status.toLowerCase();
-            if (statusLower === 'propuesta enviada' || statusLower === 'propuesta_enviada') return 'propuesta_enviada';
-            if (statusLower.includes('en curso') || statusLower === 'propuesta_en_curso') return 'propuesta_en_curso';
-            if (statusLower.includes('en edicion') || statusLower === 'propuesta_en_edicion') return 'propuesta_en_edicion';
-            if (statusLower.includes('muestra pedida') || statusLower === 'muestra_pedida') return 'muestra_pedida';
-            if (statusLower.includes('muestra entregada') || statusLower.includes('amostra enviada') || statusLower === 'muestra_entregada' || statusLower === 'amostra_enviada') return 'amostra_enviada';
-            if (statusLower.includes('aguarda dossier') && !statusLower.includes('aprovacao')) return 'aguarda_dossier';
-            if (statusLower.includes('aguarda') && statusLower.includes('aprovacao') && statusLower.includes('dossier')) return 'aguarda_aprovacao_dossier';
-            if (statusLower.includes('aguarda') && statusLower.includes('creacion') && statusLower.includes('cliente')) return 'aguarda_creacion_cliente';
-            if (statusLower.includes('aguarda') && statusLower.includes('creacion') && statusLower.includes('codigo') && statusLower.includes('phc')) return 'aguarda_creacion_codigo_phc';
-            if (statusLower.includes('aguarda') && statusLower.includes('pagamento')) return 'aguarda_pagamento';
-            // Estado 'encomendado' eliminado - usar 'encomenda_en_curso' en su lugar
-            if (statusLower.includes('encomenda') && (statusLower.includes('en curso') || statusLower.includes('em curso'))) return 'encomenda_en_curso';
-            if (statusLower.includes('concluida') || statusLower.includes('concluída') || statusLower === 'encomenda_concluida') return 'encomenda_concluida';
-            if (statusLower.includes('rechazada') || statusLower.includes('rejeitada')) return 'rejeitada';
-            return status;
-        };
-
-        // Extraer estados del historial de modificaciones
-        const historial = proposal.historial_modificaciones || [];
-        const statusChanges = historial.filter(cambio => cambio.tipo === 'cambio_estado');
-        
-        // Función para extraer estados de la descripción (soporta ES, PT, EN)
-        const extractStatesFromDescription = (descripcion) => {
-            const estados = [];
-            if (!descripcion) return estados;
-            
-            // Patrones para diferentes idiomas: "de X a Y", "from X to Y", etc.
-            const patterns = [
-                /de\s+["']([^"']+)["']\s+a\s+["']([^"']+)["']/i,  // ES: de "X" a "Y"
-                /alterado\s+de\s+["']([^"']+)["']\s+para\s+["']([^"']+)["']/i,  // PT: alterado de "X" para "Y"
-                /from\s+["']([^"']+)["']\s+to\s+["']([^"']+)["']/i,  // EN: from "X" to "Y"
-                /changed\s+from\s+["']([^"']+)["']\s+to\s+["']([^"']+)["']/i,   // EN alternativo
-                // Patrones sin comillas
-                /de\s+([^\s]+)\s+a\s+([^\s]+)/i,  // ES: de X a Y
-                /alterado\s+de\s+([^\s]+)\s+para\s+([^\s]+)/i,  // PT: alterado de X para Y
-                /from\s+([^\s]+)\s+to\s+([^\s]+)/i  // EN: from X to Y
-            ];
-            
-            for (const pattern of patterns) {
-                const match = descripcion.match(pattern);
-                if (match) {
-                    // El estado anterior (match[1]) y el nuevo (match[2])
-                    const estadoAnterior = normalizeStatus(match[1].trim());
-                    const estadoNuevo = normalizeStatus(match[2].trim());
-                    if (estadoAnterior && statusOrder.includes(estadoAnterior)) {
-                        estados.push(estadoAnterior);
-                    }
-                    if (estadoNuevo && statusOrder.includes(estadoNuevo)) {
-                        estados.push(estadoNuevo);
-                    }
-                    break; // Solo usar el primer patrón que coincida
-                }
-            }
-            return estados;
-        };
-
-        // Obtener el estado actual
-        const currentStatus = normalizeStatus(proposal.estado_propuesta);
-        
-        // Estados fijos: siempre al inicio y al final
-        const estadoInicial = 'propuesta_en_curso';
-        // Si está rechazada, mostrar rejeitada como final, sino siempre encomenda_concluida
-        const estadoFinal = currentStatus === 'rejeitada' ? 'rejeitada' : 'encomenda_concluida';
-        
-        // Obtener todos los estados únicos del historial para saber cuáles ya pasó
-        const estadosDelHistorial = new Set();
-        
-        // Extraer estados de cada cambio en el historial
-        statusChanges.forEach(cambio => {
-            const estados = extractStatesFromDescription(cambio.descripcion || '');
-            estados.forEach(estado => {
-                if (estado && statusOrder.includes(estado)) {
-                    estadosDelHistorial.add(estado);
-                }
-            });
-        });
-
-        // Agregar el estado actual
-        if (currentStatus && statusOrder.includes(currentStatus)) {
-            estadosDelHistorial.add(currentStatus);
-        }
-
-        // Crear lista de estados: inicio + estados por los que pasó + final
-        const estadosIntermedios = Array.from(estadosDelHistorial)
-            .filter(estado => 
-                estado && 
-                statusOrder.includes(estado) && 
-                estado !== estadoInicial && 
-                estado !== estadoFinal
-            )
-            .sort((a, b) => {
-                const indexA = statusOrder.indexOf(a);
-                const indexB = statusOrder.indexOf(b);
-                return indexA - indexB;
-            });
-
-        // Construir lista final: inicio + intermedios + final
-        const estadosFinalesUnicos = [estadoInicial];
-        estadosIntermedios.forEach(estado => {
-            if (!estadosFinalesUnicos.includes(estado)) {
-                estadosFinalesUnicos.push(estado);
-            }
-        });
-        
-        // Siempre agregar el estado final al final
-        if (!estadosFinalesUnicos.includes(estadoFinal)) {
-            estadosFinalesUnicos.push(estadoFinal);
-        }
-        
-        const totalSteps = estadosFinalesUnicos.length;
-        
-        // Calcular el índice actual y porcentaje de progreso
-        const currentIndex = estadosFinalesUnicos.indexOf(currentStatus);
-        const progressPercentage = currentIndex >= 0 ? ((currentIndex + 1) / totalSteps) * 100 : 0;
-
-        // Traducciones
-        const translations = {
-            pt: {
-                progressTitle: 'Progresso da Proposta',
-                statusChanges: 'Alterações de Estado',
-                currentStep: 'Passo Atual'
-            },
-            es: {
-                progressTitle: 'Progreso de la Propuesta',
-                statusChanges: 'Cambios de Estado',
-                currentStep: 'Paso Actual'
-            },
-            en: {
-                progressTitle: 'Proposal Progress',
-                statusChanges: 'Status Changes',
-                currentStep: 'Current Step'
-            }
-        };
-
-        const t = translations[this.currentLanguage] || translations.pt;
-
-        // Generar los pasos de la barra de progreso mostrando todos los estados hasta el final
-        const stepsHTML = estadosFinalesUnicos.map((status, index) => {
-            const isCurrent = status === currentStatus;
-            const isCompleted = index < currentIndex;
-            const isPending = index > currentIndex;
-            const isFinal = status === estadoFinal;
-            const statusText = this.getStatusText(status);
-            
-            // Determinar colores según el estado
-            let circleColor, borderColor, textColor, borderWidth;
-            if (isCurrent) {
-                circleColor = '#3b82f6'; // Azul para actual
-                borderColor = '#3b82f6';
-                textColor = '#3b82f6';
-                borderWidth = '3px';
-            } else if (isCompleted) {
-                circleColor = '#10b981'; // Verde para completado
-                borderColor = '#10b981';
-                textColor = '#10b981';
-                borderWidth = '2px';
-            } else if (isFinal && isPending) {
-                circleColor = '#ef4444'; // Rojo para rechazada pendiente
-                borderColor = '#ef4444';
-                textColor = '#ef4444';
-                borderWidth = '2px';
-            } else {
-                circleColor = '#6b7280'; // Gris para pendiente
-                borderColor = '#6b7280';
-                textColor = '#6b7280';
-                borderWidth = '2px';
-            }
-            
-            return `
-                <div class="progress-step" style="
-                    flex: 1;
-                    text-align: center;
-                    position: relative;
-                    padding: 8px 4px;
-                    min-width: 80px;
-                ">
-                    <div style="
-                        width: ${isCurrent ? '16px' : '12px'};
-                        height: ${isCurrent ? '16px' : '12px'};
-                        border-radius: 50%;
-                        background: ${circleColor};
-                        margin: 0 auto 4px;
-                        border: ${borderWidth} solid ${borderColor};
-                        box-shadow: ${isCurrent ? '0 0 0 4px rgba(59,130,246,0.2)' : 'none'};
-                        transition: all 0.3s;
-                        position: relative;
-                        z-index: 2;
-                    "></div>
-                    <div style="
-                        font-size: 0.7rem;
-                        color: ${textColor};
-                        font-weight: ${isCurrent ? '600' : '400'};
-                        line-height: 1.2;
-                        word-break: break-word;
-                    ">${statusText}</div>
-                </div>
-            `;
-        }).join('');
-
-        return `
-            <div class="progress-section" style="
-                margin: 24px 0;
-                padding: 20px;
-                background: var(--bg-secondary, #1f2937);
-                border-radius: 12px;
-                border: 1px solid var(--border-color, #374151);
-            ">
-                <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 16px;
-                ">
-                    <h4 style="
-                        margin: 0;
-                        color: var(--text-primary, #f9fafb);
-                        font-size: 1rem;
-                        font-weight: 600;
-                    ">${t.progressTitle}</h4>
-                    <div style="
-                        display: flex;
-                        gap: 16px;
-                        align-items: center;
-                    ">
-                        <span style="
-                            color: var(--text-secondary, #9ca3af);
-                            font-size: 0.875rem;
-                        ">${t.statusChanges}: <strong style="color: var(--accent-500, #8b5cf6);">${statusChanges.length}</strong></span>
-                        <span style="
-                            color: var(--text-secondary, #9ca3af);
-                            font-size: 0.875rem;
-                        ">${t.currentStep}: <strong style="color: var(--accent-500, #8b5cf6);">${currentIndex >= 0 ? currentIndex + 1 : 1}/${totalSteps}</strong></span>
-                    </div>
-                </div>
-                
-                <!-- Barra de progreso mejorada -->
-                <div style="
-                    position: relative;
-                    margin-bottom: 24px;
-                    padding: 0 8px;
-                ">
-                    <!-- Línea de conexión entre pasos -->
-                    <div style="
-                        position: absolute;
-                        top: 8px;
-                        left: 8px;
-                        right: 8px;
-                        height: 3px;
-                        background: var(--bg-tertiary, #374151);
-                        border-radius: 2px;
-                        z-index: 1;
-                    "></div>
-                    <!-- Línea de progreso completado -->
-                    <div style="
-                        position: absolute;
-                        top: 8px;
-                        left: 8px;
-                        width: ${progressPercentage}%;
-                        height: 3px;
-                        background: linear-gradient(90deg, #10b981 0%, #3b82f6 100%);
-                        border-radius: 2px;
-                        z-index: 1;
-                        transition: width 0.5s ease;
-                    "></div>
-                </div>
-
-                <!-- Pasos de progreso -->
-                <div style="
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    position: relative;
-                    margin-top: 8px;
-                    padding: 0 8px;
-                ">
-                    ${stepsHTML}
-                </div>
-            </div>
-        `;
-    }
 
     /**
      * Obtener etiquetas traducidas para los detalles de la propuesta
@@ -2867,6 +2582,180 @@ class ProposalsManager {
         } catch (error) {
             console.error('Error en registrarModificacion:', error);
         }
+    }
+
+    /**
+     * Ver logotipos de la propuesta
+     */
+    viewProposalLogos(proposalId) {
+        const proposal = this.allProposals.find(p => p.id === proposalId);
+        if (!proposal) {
+            console.error('Propuesta no encontrada:', proposalId);
+            return;
+        }
+
+        // Obtener logos de los artículos
+        const logos = proposal.articulos
+            .filter(art => art.logo_url && art.logo_url.trim() !== '')
+            .map(art => ({
+                nombre: art.nombre_articulo || 'Sin nombre',
+                logoUrl: art.logo_url,
+                cantidad: art.cantidad || 0,
+                referencia: art.referencia_articulo || '-'
+            }));
+
+        if (logos.length === 0) {
+            const message = this.currentLanguage === 'es' ? 
+                'No hay logotipos en esta propuesta' : 
+                this.currentLanguage === 'pt' ?
+                'Não há logotipos nesta proposta' :
+                'No logos in this proposal';
+            this.showNotification(message, 'info');
+            return;
+        }
+
+        const modal = document.getElementById('proposalLogosModal');
+        const content = document.getElementById('proposalLogosContent');
+        const title = document.getElementById('logos-modal-title');
+
+        if (!modal || !content) {
+            console.error('Modal de logos no encontrado');
+            return;
+        }
+
+        // Traducciones
+        const translations = {
+            es: {
+                title: 'Logotipos de la Propuesta',
+                product: 'Producto',
+                quantity: 'Cantidad',
+                reference: 'Referencia',
+                close: 'Cerrar'
+            },
+            pt: {
+                title: 'Logotipos da Proposta',
+                product: 'Produto',
+                quantity: 'Quantidade',
+                reference: 'Referência',
+                close: 'Fechar'
+            },
+            en: {
+                title: 'Proposal Logos',
+                product: 'Product',
+                quantity: 'Quantity',
+                reference: 'Reference',
+                close: 'Close'
+            }
+        };
+
+        const t = translations[this.currentLanguage] || translations.es;
+
+        if (title) {
+            title.textContent = t.title;
+        }
+
+        // Función auxiliar para detectar si es PDF
+        const isPDF = (url) => {
+            if (!url) return false;
+            const urlLower = url.toLowerCase();
+            return urlLower.endsWith('.pdf') || 
+                   urlLower.includes('.pdf?') || 
+                   urlLower.includes('content-type=application/pdf') ||
+                   urlLower.includes('type=pdf');
+        };
+
+        // Generar HTML con los logos
+        content.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; padding: 20px 0;">
+                ${logos.map((logo, index) => {
+                    const isPdfFile = isPDF(logo.logoUrl);
+                    const viewPdfText = this.currentLanguage === 'es' ? 'Ver PDF' : 
+                                       this.currentLanguage === 'pt' ? 'Ver PDF' : 
+                                       'View PDF';
+                    
+                    return `
+                    <div style="
+                        background: var(--bg-secondary, #1f2937);
+                        border: 1px solid var(--border-color, #374151);
+                        border-radius: 12px;
+                        padding: 16px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 12px;
+                    ">
+                        <div style="
+                            width: 100%;
+                            height: 200px;
+                            background: white;
+                            border-radius: 8px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            overflow: hidden;
+                            border: 2px solid var(--border-color, #374151);
+                            position: relative;
+                        ">
+                            ${isPdfFile ? `
+                                <div style="text-align: center; padding: 20px; width: 100%;">
+                                    <i class="fas fa-file-pdf" style="font-size: 3rem; color: #ef4444; margin-bottom: 10px;"></i>
+                                    <div style="color: #1f2937; font-weight: 600; margin-bottom: 10px;">PDF</div>
+                                    <a href="${logo.logoUrl}" target="_blank" rel="noopener noreferrer" style="
+                                        color: #3b82f6;
+                                        text-decoration: none;
+                                        padding: 8px 16px;
+                                        background: #3b82f6;
+                                        color: white;
+                                        border-radius: 6px;
+                                        display: inline-block;
+                                        font-weight: 600;
+                                        transition: all 0.2s;
+                                    " onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">${viewPdfText}</a>
+                                </div>
+                            ` : `
+                                <img src="${logo.logoUrl}" 
+                                     alt="${logo.nombre}" 
+                                     style="
+                                         max-width: 100%;
+                                         max-height: 100%;
+                                         object-fit: contain;
+                                         display: block;
+                                     "
+                                     onerror="
+                                         const parent = this.parentElement;
+                                         parent.innerHTML = '<div style=\\'text-align: center; padding: 20px; width: 100%;\\'><i class=\\'fas fa-image\\' style=\\'font-size: 3rem; color: #6b7280; margin-bottom: 10px;\\'></i><div style=\\'color: #1f2937; font-size: 0.875rem;\\'>Imagen no disponible</div><a href=\\'${logo.logoUrl}\\' target=\\'_blank\\' rel=\\'noopener noreferrer\\' style=\\'color: #3b82f6; text-decoration: none; margin-top: 10px; display: inline-block;\\'>Abrir enlace</a></div>';
+                                         console.error('Error cargando logo:', '${logo.logoUrl}');
+                                     ">
+                            `}
+                        </div>
+                        <div style="width: 100%; text-align: center;">
+                            <div style="
+                                font-weight: 600;
+                                color: var(--text-primary, #f9fafb);
+                                margin-bottom: 8px;
+                                font-size: 0.9rem;
+                                word-break: break-word;
+                            ">${logo.nombre}</div>
+                            <div style="
+                                font-size: 0.75rem;
+                                color: var(--text-secondary, #9ca3af);
+                                display: flex;
+                                justify-content: space-between;
+                                gap: 8px;
+                                flex-wrap: wrap;
+                            ">
+                                <span>${t.quantity}: <strong>${logo.cantidad}</strong></span>
+                                <span>${t.reference}: <strong>${logo.referencia}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                }).join('')}
+            </div>
+        `;
+
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
 
     /**
@@ -5693,13 +5582,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     // Cerrar modal de código al hacer clic fuera
     const codeModal = document.getElementById('proposalCodeModal');
     if (codeModal) {
         codeModal.addEventListener('click', (e) => {
             if (e.target === codeModal) {
                 closeProposalCodeModal();
+            }
+        });
+    }
+
+    // Cerrar modal de logos al hacer clic fuera
+    const logosModal = document.getElementById('proposalLogosModal');
+    if (logosModal) {
+        logosModal.addEventListener('click', (e) => {
+            if (e.target === logosModal) {
+                closeProposalLogosModal();
             }
         });
     }
@@ -5711,6 +5610,17 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function closeProposalCodeModal() {
     const modal = document.getElementById('proposalCodeModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+    }
+}
+
+/**
+ * Cerrar modal de logotipos de propuesta
+ */
+function closeProposalLogosModal() {
+    const modal = document.getElementById('proposalLogosModal');
     if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';

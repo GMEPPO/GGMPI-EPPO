@@ -180,3 +180,4 @@ Puedes crear usuarios directamente desde Supabase:
    - Añadir menú de usuario con opción de logout
    - Mejorar mensajes de error y éxito
 
+

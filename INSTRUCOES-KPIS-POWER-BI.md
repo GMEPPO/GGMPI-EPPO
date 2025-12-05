@@ -301,3 +301,4 @@ Para qualquer dúvida sobre a estrutura de dados ou campos disponíveis, consult
 - Vista: `vista_kpis_propuestas`
 - Documentação de campos nos scripts SQL
 
+

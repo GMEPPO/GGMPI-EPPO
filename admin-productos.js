@@ -94,12 +94,15 @@ const productFormTranslations = {
         descriptions: 'Descrições',
         categoryFields: 'Campos da Categoria',
         multimedia: 'Multimédia',
+        specifications: 'Especificações do Produto',
         deliveryTime: 'Prazo de Entrega',
         referencePackaging: 'Referência e Embalagem',
+        referencesSuppliers: 'Referências e Fornecedores',
+        referencesColors: 'Referências e Cores',
         supplierBusiness: 'Fornecedor e Área de Negócio',
         referenceVariants: 'Variantes de Referências',
         productZones: 'Zonas do Produto',
-        variantsPrices: 'Variantes e Preços',
+        variantsPrices: 'Preços e Variantes',
         
         // Campos
         brand: 'Marca',
@@ -214,12 +217,15 @@ const productFormTranslations = {
         descriptions: 'Descripciones',
         categoryFields: 'Campos de la Categoría',
         multimedia: 'Multimedia',
+        specifications: 'Especificaciones del Producto',
         deliveryTime: 'Plazo de Entrega',
         referencePackaging: 'Referencia y Embalaje',
+        referencesSuppliers: 'Referencias y Proveedores',
+        referencesColors: 'Referencias y Colores',
         supplierBusiness: 'Fornecedor y Área de Negocio',
         referenceVariants: 'Variantes de Referencias',
         productZones: 'Zonas del Producto',
-        variantsPrices: 'Variantes y Precios',
+        variantsPrices: 'Precios y Variantes',
         
         // Campos
         brand: 'Marca',
@@ -363,17 +369,23 @@ function updateProductFormTranslations() {
             section.textContent = t.categoryFields;
         } else if (text.includes('Multimedia') || text.includes('Multimédia')) {
             section.textContent = t.multimedia;
+        } else if (text.includes('Especificaciones del Producto') || text.includes('Especificações do Produto')) {
+            section.textContent = t.specifications;
         } else if (text.includes('Plazo de Entrega') || text.includes('Prazo de Entrega')) {
             section.textContent = t.deliveryTime;
         } else if (text.includes('Referencia y Embalaje') || text.includes('Referência e Embalagem')) {
             section.textContent = t.referencePackaging;
+        } else if (text.includes('Referencias y Proveedores') || text.includes('Referências e Fornecedores')) {
+            section.textContent = t.referencesSuppliers || 'Referências e Fornecedores';
+        } else if (text.includes('Referencias y Colores') || text.includes('Referências e Cores')) {
+            section.textContent = t.referencesColors || 'Referências e Cores';
         } else if (text.includes('Fornecedor') || text.includes('Fornecedor')) {
             section.textContent = t.supplierBusiness;
         } else if (text.includes('Variantes de Referencias') || text.includes('Variantes de Referências')) {
             section.textContent = t.referenceVariants;
         } else if (text.includes('Zonas del Producto') || text.includes('Zonas do Produto')) {
             section.textContent = t.productZones;
-        } else if (text.includes('Variantes y Precios') || text.includes('Variantes e Preços')) {
+        } else if (text.includes('Variantes y Precios') || text.includes('Variantes e Preços') || text.includes('Precios y Variantes') || text.includes('Preços e Variantes')) {
             section.textContent = t.variantsPrices;
         }
     });
@@ -690,6 +702,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
+    // Configurar visibilidad de descripción PT según el mercado seleccionado
+    function toggleDescripcionPt() {
+        const mercadoField = document.getElementById('mercado');
+        const descripcionPtContainer = document.getElementById('descripcionPtContainer');
+        const descripcionPtField = document.getElementById('descripcionPt');
+        
+        if (!mercadoField || !descripcionPtContainer || !descripcionPtField) return;
+        
+        const mercado = mercadoField.value;
+        
+        if (mercado === 'PT' || mercado === 'AMBOS') {
+            // Mostrar campo de descripción PT y hacerlo obligatorio
+            descripcionPtContainer.style.display = 'block';
+            descripcionPtContainer.style.width = '100%';
+            descripcionPtContainer.style.gridColumn = '1 / -1'; // Asegurar que ocupe todo el ancho
+            descripcionPtField.setAttribute('required', 'required');
+            // Asegurar que el textarea tenga el mismo tamaño que el ES
+            const descripcionEsField = document.getElementById('descripcionEs');
+            if (descripcionEsField) {
+                descripcionPtField.style.width = '100%';
+                descripcionPtField.style.minHeight = descripcionEsField.style.minHeight || '100px';
+            }
+        } else if (mercado === 'ES') {
+            // Ocultar campo de descripción PT y quitar obligatoriedad
+            descripcionPtContainer.style.display = 'none';
+            descripcionPtField.removeAttribute('required');
+            descripcionPtField.value = ''; // Limpiar valor cuando se oculta
+        } else {
+            // Si no hay mercado seleccionado, ocultar por defecto
+            descripcionPtContainer.style.display = 'none';
+            descripcionPtField.removeAttribute('required');
+        }
+    }
+    
+    // Agregar event listener al campo mercado
+    const mercadoField = document.getElementById('mercado');
+    if (mercadoField) {
+        mercadoField.addEventListener('change', toggleDescripcionPt);
+        // Ejecutar una vez al cargar para establecer el estado inicial
+        toggleDescripcionPt();
+    }
+    
     // Configurar interfaz según el modo INMEDIATAMENTE
     setupModeInterface();
     
@@ -798,14 +852,15 @@ async function initSupabase() {
   try {
     if (window.universalSupabase) {
       supabaseClient = await window.universalSupabase.getClient();
-        } else if (typeof supabase !== 'undefined') {
-            const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                auth: { persistSession: false }
-            });
+        } else {
+            // Esperar un momento para que universalSupabase se inicialice
+            await new Promise(resolve => setTimeout(resolve, 200));
+            if (window.universalSupabase) {
+                supabaseClient = await window.universalSupabase.getClient();
+            } else {
+                throw new Error('Supabase no está disponible. Asegúrate de que supabase-config-universal.js se cargue antes.');
+            }
         }
-        console.log('✅ Supabase inicializado');
     } catch (error) {
         showAlert('Error al inicializar Supabase: ' + error.message, 'error');
         console.error(error);
@@ -1154,9 +1209,8 @@ async function renderCategoryFields(categoria) {
                             if (!seenFieldIds.has(fieldIdKey)) {
                                 seenFieldIds.add(fieldIdKey);
                                 uniqueFields.push(field);
-                                console.log(`✅ Campo agregado: ${fieldIdKey} (tipo: ${field.type})`);
                             } else {
-                                console.warn(`⚠️ Campo duplicado eliminado: ${fieldIdKey} (tipo: ${field.type}, UUID: ${field.categoryFieldId})`);
+                                // Campo duplicado eliminado
                             }
                         });
                         fields = uniqueFields;
@@ -2152,6 +2206,7 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
         plazo_entrega: formData.get('plazoEntrega') || null,
         phc_ref: formData.get('phcRef') || null,
         box_size: formData.get('boxSize') ? parseInt(formData.get('boxSize')) : null,
+        peso: formData.get('peso') ? parseFloat(formData.get('peso')) : 0.00,
         nombre_fornecedor: formData.get('nombreFornecedor') || null,
         referencia_fornecedor: formData.get('referenciaFornecedor') || null,
         area_negocio: formData.get('areaNegocio') || null,
@@ -2468,23 +2523,45 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
             console.log('📸 foto (tipo y valor):', typeof productData.foto, productData.foto);
             console.log('📸 foto_2 (tipo y valor):', typeof productData.foto_2, productData.foto_2);
             
+            // Obtener las imágenes antiguas antes de actualizar
+            const { data: oldProductData } = await supabaseClient
+                .from('products')
+                .select('foto, foto_2')
+                .eq('id', window.editingProductId)
+                .single();
+            
+            // Eliminar imágenes antiguas del bucket si fueron reemplazadas
+            if (oldProductData) {
+                // Si hay una nueva foto y es diferente a la antigua, eliminar la antigua
+                if (productData.foto && oldProductData.foto && productData.foto !== oldProductData.foto) {
+                    console.log('🗑️ Eliminando imagen principal antigua del bucket:', oldProductData.foto);
+                    await deleteImageFromStorage(oldProductData.foto);
+                }
+                // Si la nueva foto es null y había una antigua, eliminar la antigua
+                if (!productData.foto && oldProductData.foto) {
+                    console.log('🗑️ Eliminando imagen principal del bucket (se eliminó del producto):', oldProductData.foto);
+                    await deleteImageFromStorage(oldProductData.foto);
+                }
+                
+                // Si hay una nueva foto_2 y es diferente a la antigua, eliminar la antigua
+                if (productData.foto_2 && oldProductData.foto_2 && productData.foto_2 !== oldProductData.foto_2) {
+                    console.log('🗑️ Eliminando imagen secundaria antigua del bucket:', oldProductData.foto_2);
+                    await deleteImageFromStorage(oldProductData.foto_2);
+                }
+                // Si la nueva foto_2 es null y había una antigua, eliminar la antigua
+                if (!productData.foto_2 && oldProductData.foto_2) {
+                    console.log('🗑️ Eliminando imagen secundaria del bucket (se eliminó del producto):', oldProductData.foto_2);
+                    await deleteImageFromStorage(oldProductData.foto_2);
+                }
+            }
+            
             // Intentar actualizar con todos los campos
             try {
-                console.log('🔄 Ejecutando UPDATE en Supabase...');
-                console.log('   - Tabla: products');
-                console.log('   - ID del producto:', window.editingProductId);
-                console.log('   - Campos a actualizar:', Object.keys(productData).length);
-                
                 const { data, error } = await supabaseClient
                     .from('products')
                     .update(productData)
                     .eq('id', window.editingProductId)
                     .select();
-                
-                console.log('📥 Respuesta de Supabase:');
-                console.log('   - Error:', error);
-                console.log('   - Data:', data);
-                console.log('   - Data length:', data?.length);
                 
                 if (error) {
                     console.error('❌ Error en update:', error);
@@ -3177,7 +3254,13 @@ async function fillFormWithProduct(product, isDuplicate = false) {
         
     }
     const mercadoField = document.getElementById('mercado');
-    if (mercadoField && product.mercado) mercadoField.value = product.mercado;
+    if (mercadoField && product.mercado) {
+        mercadoField.value = product.mercado;
+        // Disparar evento change para actualizar visibilidad de descripción PT
+        setTimeout(() => {
+            mercadoField.dispatchEvent(new Event('change'));
+        }, 100);
+    }
     const badgeField = document.getElementById('badge');
     if (badgeField) {
         // Cargar desde badge_pt (donde se guarda)
@@ -3206,6 +3289,14 @@ async function fillFormWithProduct(product, isDuplicate = false) {
     if (descEsField && product.descripcion_es) descEsField.value = product.descripcion_es;
     const descPtField = document.getElementById('descripcionPt');
     if (descPtField && product.descripcion_pt) descPtField.value = product.descripcion_pt;
+    
+    // Actualizar visibilidad de descripción PT según el mercado después de cargar los valores
+    setTimeout(() => {
+        const mercadoField = document.getElementById('mercado');
+        if (mercadoField) {
+            mercadoField.dispatchEvent(new Event('change'));
+        }
+    }, 200);
     // Manejar imágenes: mostrar preview si ya hay URL guardada
     const fotoUrlField = document.getElementById('fotoUrl');
     if (fotoUrlField && product.foto) {
@@ -3227,6 +3318,8 @@ async function fillFormWithProduct(product, isDuplicate = false) {
     if (phcRefField && product.phc_ref) phcRefField.value = product.phc_ref;
     const boxSizeField = document.getElementById('boxSize');
     if (boxSizeField && product.box_size) boxSizeField.value = product.box_size;
+    const pesoField = document.getElementById('peso');
+    if (pesoField && product.peso !== undefined && product.peso !== null) pesoField.value = product.peso;
     
     // Nuevos campos: Fornecedor y Área de Negocio
     const nombreFornecedorField = document.getElementById('nombreFornecedor');
@@ -3576,7 +3669,6 @@ window.deleteProduct = async function() {
         }
         
         console.log('🗑️ Intentando eliminar producto con ID:', productIdToDelete);
-        console.log('🔍 Cliente Supabase:', supabaseClient ? 'Inicializado' : 'No inicializado');
         
         // Verificar que el producto existe antes de eliminar
         const { data: productExists, error: checkError } = await supabaseClient
@@ -3599,8 +3691,26 @@ window.deleteProduct = async function() {
             console.log('⚠️ Producto no encontrado, pero continuando con eliminación');
         }
         
+        // Obtener las URLs de las imágenes antes de eliminar el producto
+        const { data: productData } = await supabaseClient
+            .from('products')
+            .select('foto, foto_2')
+            .eq('id', productIdToDelete)
+            .single();
+        
+        // Eliminar las imágenes del bucket si existen
+        if (productData) {
+            if (productData.foto) {
+                console.log('🗑️ Eliminando imagen principal del bucket:', productData.foto);
+                await deleteImageFromStorage(productData.foto);
+            }
+            if (productData.foto_2) {
+                console.log('🗑️ Eliminando imagen secundaria del bucket:', productData.foto_2);
+                await deleteImageFromStorage(productData.foto_2);
+            }
+        }
+        
         // Eliminar el producto
-        console.log('🔄 Ejecutando DELETE en Supabase...');
         
         // Intentar eliminación con .select() para confirmar
         const { data: deletedData, error } = await supabaseClient
@@ -4038,7 +4148,19 @@ let homeCategories = [];
 let categoryFieldsInForm = []; // Campos que se están agregando en el formulario de categoría
 
 async function openHomeCategoryManager() {
-    document.getElementById('homeCategoryModal').classList.add('active');
+    console.log('🚀 openHomeCategoryManager llamado');
+    const modal = document.getElementById('homeCategoryModal');
+    if (!modal) {
+        console.error('❌ Error: homeCategoryModal no encontrado');
+        return;
+    }
+    
+    console.log('✅ Modal encontrado, agregando clase active');
+    modal.classList.add('active');
+    
+    // Verificar que el onclick esté configurado
+    const hasOnclick = modal.getAttribute('onclick');
+    console.log('📍 Modal tiene onclick:', !!hasOnclick, hasOnclick);
     
     // Asegurar que el botón de subcategorías esté visible
     const btn = document.getElementById('createSubcategoryFromHomeBtn');
@@ -4050,6 +4172,79 @@ async function openHomeCategoryManager() {
     
     // Verificar si hay categoría "Personalizados" para configurar el botón
     updateCreateSubcategoryButtonVisibility();
+    
+    // Configurar event listener para cerrar al hacer clic en el overlay
+    setupModalOverlayClickHandler();
+    
+    // Verificar que el modal-content tenga stopPropagation
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        const hasStopPropagation = modalContent.getAttribute('onclick');
+        console.log('📍 modal-content tiene onclick (stopPropagation):', !!hasStopPropagation, hasStopPropagation);
+    }
+}
+
+/**
+ * Configurar event listener para cerrar el modal al hacer clic en el overlay (fondo oscuro)
+ */
+function setupModalOverlayClickHandler() {
+    console.log('🔧 setupModalOverlayClickHandler llamado');
+    const modal = document.getElementById('homeCategoryModal');
+    const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    
+    if (!modal || !modalContent) {
+        console.error('❌ Error: No se pudo configurar el handler del overlay: modal o modalContent no encontrado');
+        console.error('   modal:', !!modal);
+        console.error('   modalContent:', !!modalContent);
+        return;
+    }
+    
+    console.log('✅ Modal y modalContent encontrados');
+    
+    // Remover handler anterior si existe
+    if (window.homeCategoryModalOverlayHandler) {
+        console.log('🧹 Removiendo handler anterior del overlay');
+        modal.removeEventListener('click', window.homeCategoryModalOverlayHandler, true);
+    }
+    
+    // Remover listener de stopPropagation anterior si existe
+    if (window.homeCategoryModalContentClickHandler) {
+        console.log('🧹 Removiendo handler anterior del modal-content');
+        modalContent.removeEventListener('click', window.homeCategoryModalContentClickHandler);
+    }
+    
+    // Prevenir que los clics dentro del modal-content se propaguen al modal
+    window.homeCategoryModalContentClickHandler = (e) => {
+        console.log('🛑 stopPropagation en modal-content');
+        e.stopPropagation();
+    };
+    modalContent.addEventListener('click', window.homeCategoryModalContentClickHandler);
+    console.log('✅ Listener de stopPropagation agregado al modal-content');
+    
+    // Crear nuevo handler para el overlay
+    window.homeCategoryModalOverlayHandler = (event) => {
+        console.log('🖱️ Click detectado en el modal (overlay handler)');
+        console.log('   event.target:', event.target);
+        console.log('   event.currentTarget:', event.currentTarget);
+        
+        // Verificar que el clic NO sea dentro del modal-content
+        const clickedInsideContent = modalContent.contains(event.target);
+        console.log('   clickedInsideContent:', clickedInsideContent);
+        
+        // Si el clic es directamente en el modal (overlay) o fuera del modal-content, cerrar
+        if (!clickedInsideContent) {
+            console.log('✅ Clic fuera del contenido, cerrando modal...');
+            event.preventDefault();
+            event.stopPropagation();
+            closeHomeCategoryManager();
+        } else {
+            console.log('ℹ️ Clic dentro del contenido, ignorando...');
+        }
+    };
+    
+    // Agregar listener al modal (overlay) con capture: true para capturar antes
+    modal.addEventListener('click', window.homeCategoryModalOverlayHandler, true);
+    console.log('✅ Listener del overlay agregado al modal (capture: true)');
 }
 
 function updateCreateSubcategoryButtonVisibility() {
@@ -4157,9 +4352,61 @@ window.openCreateSubcategoryFromCategoryForm = function() {
     showCreateSubcategoryForm();
 }
 
+/**
+ * Manejar clic en el overlay del modal (llamado desde el HTML)
+ */
+function handleModalOverlayClick(event) {
+    console.log('🔍 handleModalOverlayClick llamado');
+    console.log('📍 event.target:', event.target);
+    console.log('📍 event.currentTarget:', event.currentTarget);
+    
+    const modal = document.getElementById('homeCategoryModal');
+    const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    
+    console.log('📍 modal encontrado:', !!modal);
+    console.log('📍 modalContent encontrado:', !!modalContent);
+    
+    if (!modal) {
+        console.error('❌ Error: modal no encontrado');
+        return;
+    }
+    
+    if (!modalContent) {
+        console.error('❌ Error: modalContent no encontrado');
+        return;
+    }
+    
+    console.log('📍 event.target === modal:', event.target === modal);
+    console.log('📍 modalContent.contains(event.target):', modalContent.contains(event.target));
+    
+    // Si el clic es directamente en el modal (overlay) y no en el contenido, cerrar
+    if (event.target === modal) {
+        console.log('✅ Clic detectado en el overlay, cerrando modal...');
+        closeHomeCategoryManager();
+    } else {
+        console.log('ℹ️ Clic no fue directamente en el modal, ignorando...');
+    }
+}
+
 function closeHomeCategoryManager() {
-    document.getElementById('homeCategoryModal').classList.remove('active');
+    const modal = document.getElementById('homeCategoryModal');
+    const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    
+    if (modal) {
+        modal.classList.remove('active');
+    }
     cancelHomeCategoryEdit();
+    
+    // Remover event listeners del overlay si existen
+    if (window.homeCategoryModalOverlayHandler && modal) {
+        modal.removeEventListener('click', window.homeCategoryModalOverlayHandler, true);
+        window.homeCategoryModalOverlayHandler = null;
+    }
+    
+    if (window.homeCategoryModalContentClickHandler && modalContent) {
+        modalContent.removeEventListener('click', window.homeCategoryModalContentClickHandler);
+        window.homeCategoryModalContentClickHandler = null;
+    }
 }
 
 async function loadHomeCategoryList() {
@@ -4274,11 +4521,18 @@ function showCreateHomeCategoryForm() {
     const formSection = document.getElementById('homeCategoryFormSection');
     const categoryList = document.getElementById('homeCategoryList');
     const filtersSection = document.getElementById('categoryFiltersSection');
+    const modal = document.getElementById('homeCategoryModal');
     
     if (formSection) {
         formSection.style.display = 'block';
         formSection.style.visibility = 'visible';
         console.log('✅ Formulario de categoría mostrado');
+        
+        // Agregar event listener para cerrar al hacer clic fuera del formulario
+        // Usar setTimeout para evitar que el clic que abre el formulario lo cierre inmediatamente
+        setTimeout(() => {
+            setupClickOutsideToCloseForm();
+        }, 100);
         
         // Inmediatamente después de mostrar el formulario, forzar la visibilidad de la sección de filtros
         setTimeout(() => {
@@ -4431,6 +4685,11 @@ async function editHomeCategory(categoryId) {
     document.getElementById('homeCategoryFormSection').style.display = 'block';
     document.getElementById('homeCategoryList').style.display = 'none';
     
+    // Agregar event listener para cerrar al hacer clic fuera del formulario
+    setTimeout(() => {
+        setupClickOutsideToCloseForm();
+    }, 100);
+    
     // FORZAR que la sección de filtros esté visible SIEMPRE al editar
     const filtersSection = document.getElementById('categoryFiltersSection');
     if (filtersSection) {
@@ -4525,8 +4784,76 @@ async function editHomeCategory(categoryId) {
 function cancelHomeCategoryEdit() {
     editingHomeCategoryId = null;
     categoryFieldsInForm = [];
-    document.getElementById('homeCategoryFormSection').style.display = 'none';
-    document.getElementById('homeCategoryList').style.display = 'block';
+    const formSection = document.getElementById('homeCategoryFormSection');
+    const categoryList = document.getElementById('homeCategoryList');
+    
+    if (formSection) {
+        formSection.style.display = 'none';
+    }
+    if (categoryList) {
+        categoryList.style.display = 'block';
+    }
+    
+    // Remover event listener de clic fuera si existe
+    if (window.homeCategoryClickOutsideHandler) {
+        const modal = document.getElementById('homeCategoryModal');
+        const modalContent = modal ? modal.querySelector('.modal-content') : null;
+        if (modalContent) {
+            modalContent.removeEventListener('click', window.homeCategoryClickOutsideHandler);
+        }
+        window.homeCategoryClickOutsideHandler = null;
+    }
+}
+
+/**
+ * Configurar event listener para cerrar el formulario al hacer clic fuera
+ */
+function setupClickOutsideToCloseForm() {
+    const modal = document.getElementById('homeCategoryModal');
+    const formSection = document.getElementById('homeCategoryFormSection');
+    const modalContent = modal ? modal.querySelector('.modal-content') : null;
+    
+    if (!modal || !formSection || !modalContent) {
+        return;
+    }
+    
+    // Remover handler anterior si existe
+    if (window.homeCategoryClickOutsideHandler) {
+        modalContent.removeEventListener('click', window.homeCategoryClickOutsideHandler);
+    }
+    
+    // Crear nuevo handler
+    window.homeCategoryClickOutsideHandler = (event) => {
+        // Verificar que el formulario esté visible
+        const formDisplay = window.getComputedStyle(formSection).display;
+        const isFormVisible = formDisplay !== 'none';
+        
+        if (!isFormVisible) {
+            return;
+        }
+        
+        // Verificar que el clic NO sea dentro del formulario
+        if (formSection.contains(event.target)) {
+            return;
+        }
+        
+        // Verificar que el clic no sea en botones que abren el formulario
+        const createBtn = event.target.closest('button[onclick*="showCreateHomeCategoryForm"]');
+        const editBtn = event.target.closest('button[onclick*="editHomeCategory"]');
+        
+        if (createBtn || editBtn) {
+            return;
+        }
+        
+        // Si llegamos aquí, el clic es fuera del formulario dentro del modal-content
+        // Cerrar el formulario
+        event.preventDefault();
+        event.stopPropagation();
+        cancelHomeCategoryEdit();
+    };
+    
+    // Agregar listener al modal-content con capture: true para capturar antes que otros handlers
+    modalContent.addEventListener('click', window.homeCategoryClickOutsideHandler, true);
 }
 
 // Función auxiliar para cargar campos existentes al editar
@@ -4534,11 +4861,9 @@ async function loadCategoryFieldsForEdit(categoryId) {
     console.log('🔄 Cargando campos para edición de categoría:', categoryId);
     
     if (!supabaseClient) {
-        console.error('❌ Supabase client no inicializado');
         // Intentar inicializar si no está disponible
         await initSupabase();
         if (!supabaseClient) {
-            console.error('❌ No se pudo inicializar Supabase');
             categoryFieldsInForm = [];
             return;
         }
@@ -4626,7 +4951,6 @@ async function saveHomeCategory() {
             
             if (error) throw error;
             savedCategoryId = editingHomeCategoryId;
-            console.log('✅ Categoría actualizada en Supabase');
             
             // Guardar/actualizar campos asociados a la categoría
             console.log('🔍 Verificando campos antes de guardar...');
@@ -4635,10 +4959,7 @@ async function saveHomeCategory() {
             console.log('📊 editingHomeCategoryId:', editingHomeCategoryId);
             
             if (categoryFieldsInForm && categoryFieldsInForm.length > 0) {
-                console.log('💾 Guardando/actualizando campos de la categoría...');
                 await saveCategoryFieldsForCategory(editingHomeCategoryId, categoryFieldsInForm);
-            } else {
-                console.warn('⚠️ No hay campos para guardar. categoryFieldsInForm está vacío o no existe.');
             }
             
             alert('✅ Categoría del home actualizada correctamente');
@@ -4654,21 +4975,10 @@ async function saveHomeCategory() {
             if (error) throw error;
             savedCategoryId = data.id;
             editingHomeCategoryId = savedCategoryId; // ← IMPORTANTE: Guardar el ID para poder gestionar campos
-            console.log('✅ Categoría creada en Supabase con ID:', savedCategoryId);
-            console.log('✅ editingHomeCategoryId asignado:', editingHomeCategoryId);
-            console.log('✅ Tipo de editingHomeCategoryId:', typeof editingHomeCategoryId);
             
             // Guardar campos asociados a la categoría si hay alguno
-            console.log('🔍 Verificando campos antes de guardar (nueva categoría)...');
-            console.log('📊 categoryFieldsInForm:', categoryFieldsInForm);
-            console.log('📊 categoryFieldsInForm.length:', categoryFieldsInForm?.length);
-            console.log('📊 savedCategoryId:', savedCategoryId);
-            
             if (categoryFieldsInForm && categoryFieldsInForm.length > 0) {
-                console.log('💾 Guardando campos de la nueva categoría...');
                 await saveCategoryFieldsForCategory(savedCategoryId, categoryFieldsInForm);
-            } else {
-                console.warn('⚠️ No hay campos para guardar. categoryFieldsInForm está vacío o no existe.');
             }
             
             alert('✅ Categoría del home creada correctamente. Ahora puedes gestionar sus campos/filtros.');
@@ -4701,7 +5011,6 @@ async function saveCategoryFieldsForCategory(categoryId, fields) {
     console.log('📋 Parámetros:', { categoryId, fieldsCount: fields?.length, supabaseClient: !!supabaseClient });
     
     if (!supabaseClient) {
-        console.error('❌ Supabase client no inicializado');
         alert('Error: Supabase no está inicializado. No se pueden guardar los campos.');
         return;
     }
@@ -4713,11 +5022,8 @@ async function saveCategoryFieldsForCategory(categoryId, fields) {
     }
     
     if (!fields || fields.length === 0) {
-        console.log('ℹ️ No hay campos para guardar');
         return;
     }
-    
-    console.log(`💾 Guardando ${fields.length} campos para categoría ${categoryId}`);
     console.log('📋 Campos a guardar:', JSON.stringify(fields, null, 2));
     
     try {
@@ -5380,7 +5686,6 @@ async function deleteHomeCategory(categoryId) {
 // Función para crear la tabla (ejecutar desde consola del navegador)
 window.createCategoryTable = async function() {
     if (!supabaseClient) {
-        console.error('Supabase no está inicializado');
         return;
     }
     
@@ -5824,19 +6129,12 @@ window.addFieldToCategoryForm = async function() {
         console.log('✅ editingHomeCategoryId encontrado:', editingHomeCategoryId);
     
         // 2. VALIDAR SUPABASE CLIENT
-        console.log('🔍 Paso 2: Verificando supabaseClient...');
-        console.log('📊 supabaseClient disponible:', !!supabaseClient);
-        
         if (!supabaseClient) {
-            console.error('❌ supabaseClient no disponible');
             alert('❌ Error: No se pudo conectar con la base de datos. Recarga la página.');
             return;
         }
         
-        console.log('✅ supabaseClient disponible');
-        
         // 3. OBTENER Y VALIDAR DATOS DEL FORMULARIO
-        console.log('🔍 Paso 3: Obteniendo datos del formulario...');
     const fieldId = document.getElementById('newFieldId').value.trim().toLowerCase().replace(/\s+/g, '_');
     const labelEs = document.getElementById('newFieldLabelEs').value.trim();
     const labelPt = document.getElementById('newFieldLabelPt').value.trim();
@@ -5940,19 +6238,13 @@ window.addFieldToCategoryForm = async function() {
             return;
         }
         
-        // 8. VERIFICAR QUE REALMENTE SE GUARDÓ EN SUPABASE
-        console.log('🔍 Paso 8: Verificando datos recibidos...');
+        // 8. VERIFICAR QUE REALMENTE SE GUARDÓ
         if (!data || !data.id) {
-            console.error('❌ No se recibieron datos del servidor después del INSERT');
             alert('❌ Error: No se recibieron datos del servidor. El campo NO se guardó.');
             return;
         }
         
-        console.log('✅ Campo guardado en Supabase con ID:', data.id);
-        console.log('✅ Datos recibidos:', data);
-        
         // 9. VERIFICAR QUE EL REGISTRO EXISTE EN LA BASE DE DATOS
-        console.log('🔍 Paso 9: Verificando que el registro existe...');
         const { data: verifyData, error: verifyError } = await supabaseClient
             .from('category_fields')
             .select('id, field_id, label_es')
@@ -5960,15 +6252,11 @@ window.addFieldToCategoryForm = async function() {
             .single();
         
         if (verifyError || !verifyData) {
-            console.error('❌ Error verificando el registro guardado:', verifyError);
             alert('⚠️ El campo se insertó pero no se pudo verificar. Revisa la base de datos manualmente.');
             return;
         }
         
-        console.log('✅ Verificación exitosa: El campo existe en Supabase:', verifyData);
-        
         // 10. AGREGAR AL ARRAY LOCAL Y ACTUALIZAR UI
-        console.log('🔍 Paso 10: Actualizando UI...');
         const newField = {
             id: data.id,
             ...fieldData
@@ -6357,24 +6645,43 @@ function editCategoryFieldInForm(index) {
  * @returns {Promise<string>} URL pública de la imagen subida
  */
 async function uploadImageToSupabase(file, fieldName = 'foto') {
+    // Asegurarse de que el cliente está inicializado
     if (!supabaseClient) {
-        throw new Error('Cliente de Supabase no inicializado');
+        if (window.universalSupabase) {
+            supabaseClient = await window.universalSupabase.getClient();
+        } else {
+            throw new Error('Cliente de Supabase no inicializado. Por favor, recarga la página.');
+        }
     }
     
-    // Crear un cliente de Supabase específico para Storage sin headers globales que interfieran
-    let storageClient = supabaseClient;
-    
-    // Si el cliente tiene headers globales que fuerzan application/json, crear uno nuevo
-    if (typeof supabase !== 'undefined') {
-        const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-        
-        // Crear cliente sin headers globales que interfieran con la subida de archivos
-        storageClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: { persistSession: false }
-            // NO incluir headers globales aquí - dejar que Supabase maneje el Content-Type automáticamente
-        });
-        console.log('🔧 Cliente de Storage creado sin headers globales');
+    // Crear un cliente específico para Storage sin headers globales que interfieran
+    // Esto evita que el header 'Content-Type': 'application/json' afecte las subidas de archivos
+    let storageClient;
+    try {
+        if (typeof supabase !== 'undefined' && window.SUPABASE_CONFIG) {
+            // Crear un cliente nuevo sin headers globales para Storage
+            storageClient = supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                },
+                // NO incluir 'global.headers' para que Supabase maneje automáticamente el Content-Type según el archivo
+            });
+            // Copiar la sesión del cliente principal si existe
+            if (supabaseClient && supabaseClient.auth) {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    await storageClient.auth.setSession(session);
+                }
+            }
+        } else {
+            // Fallback al cliente compartido si no podemos crear uno nuevo
+            storageClient = supabaseClient;
+        }
+    } catch (error) {
+        console.warn('⚠️ No se pudo crear cliente específico para Storage, usando cliente compartido:', error);
+        storageClient = supabaseClient;
     }
     
     if (!file) {
@@ -6470,26 +6777,46 @@ async function uploadImageToSupabase(file, fieldName = 'foto') {
         // Subir archivo a Supabase Storage usando el cliente específico para Storage
         // IMPORTANTE: Usar storageClient, no supabaseClient, para evitar headers globales
         console.log('🚀 Iniciando subida a Supabase Storage con storageClient...');
+        console.log('📋 Tipo MIME del archivo:', fileToUpload.type);
+        console.log('📋 Nombre del archivo:', fileToUpload.name);
+        console.log('📋 Tamaño del archivo:', fileToUpload.size);
+        
+        // Asegurarse de que el tipo MIME sea correcto
+        let finalFile = fileToUpload;
+        if (!fileToUpload.type || fileToUpload.type === 'application/json' || !fileToUpload.type.startsWith('image/')) {
+            const fileExt = fileToUpload.name.split('.').pop().toLowerCase();
+            const mimeTypeMap = {
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif',
+                'webp': 'image/webp',
+                'avif': 'image/avif'
+            };
+            const correctMimeType = mimeTypeMap[fileExt] || 'image/jpeg';
+            console.log(`🔧 Corrigiendo tipo MIME de "${fileToUpload.type}" a "${correctMimeType}"`);
+            finalFile = new File([fileToUpload], fileToUpload.name, { type: correctMimeType });
+        }
+        
         const { data, error } = await storageClient.storage
             .from('product-images')
-            .upload(filePath, fileToUpload, {
+            .upload(filePath, finalFile, {
                 cacheControl: '3600',
-                upsert: false
-                // NO especificar contentType - Supabase lo detecta del File object
+                upsert: false,
+                contentType: finalFile.type
             });
         
         if (error) {
-            console.error('❌ Error subiendo imagen:', error);
-            console.error('📋 Detalles del error:', {
-                message: error.message,
-                statusCode: error.statusCode,
-                error: error.error
-            });
-            throw error;
+            // Proporcionar mensajes de error más descriptivos
+            if (error.message && (error.message.includes('Bucket not found') || error.message.includes('not found'))) {
+                throw new Error('El bucket "product-images" no existe. Por favor, créalo en Supabase Dashboard > Storage. Consulta INSTRUCCIONES-BUCKET-PRODUCT-IMAGES.md para más detalles.');
+            } else if (error.message && error.message.includes('new row violates row-level security policy')) {
+                throw new Error('Error de permisos: No tienes permiso para subir imágenes. Verifica las políticas RLS del bucket "product-images".');
+            } else {
+                // Mostrar el error original de Supabase para debugging
+                throw new Error(`Error al subir la imagen: ${error.message || JSON.stringify(error)}`);
+            }
         }
-        
-        console.log('✅ Imagen subida correctamente a Supabase Storage:', data);
-        console.log('📁 Ruta del archivo:', filePath);
         
         // Obtener URL pública
         const { data: urlData } = storageClient.storage
@@ -6497,24 +6824,18 @@ async function uploadImageToSupabase(file, fieldName = 'foto') {
             .getPublicUrl(filePath);
         
         if (!urlData || !urlData.publicUrl) {
-            console.error('❌ No se pudo obtener la URL pública. urlData:', urlData);
             throw new Error('No se pudo obtener la URL pública de la imagen');
         }
         
         // Validar que la URL sea un string válido
         const publicUrl = urlData.publicUrl;
         if (typeof publicUrl !== 'string' || publicUrl.trim() === '' || publicUrl === '{}') {
-            console.error('❌ URL pública no es válida:', publicUrl, typeof publicUrl);
             throw new Error('La URL pública obtenida no es válida');
         }
-        
-        console.log('🔗 URL pública obtenida:', publicUrl);
-        console.log('✅ URL lista para guardar en la base de datos');
         
         return publicUrl.trim(); // Devolver siempre un string limpio
         
     } catch (error) {
-        console.error('❌ Error en uploadImageToSupabase:', error);
         // Proporcionar un mensaje de error más descriptivo
         if (error.message) {
             throw new Error(error.message);
@@ -6658,13 +6979,110 @@ function showImagePreview(fieldName, imageUrl) {
 }
 
 /**
+ * Extraer ruta del archivo desde URL de Supabase Storage
+ * @param {string} url - URL completa del archivo
+ * @returns {string|null} - Ruta del archivo en el bucket o null si no es válida
+ */
+function extractFilePathFromUrl(url) {
+    if (!url || typeof url !== 'string') return null;
+    
+    // Patrón: https://[project].supabase.co/storage/v1/object/public/product-images/productos/[filename]
+    const match = url.match(/\/storage\/v1\/object\/public\/product-images\/(.+)$/);
+    if (match && match[1]) {
+        return decodeURIComponent(match[1]);
+    }
+    
+    // Si la URL ya es una ruta relativa (productos/filename.jpg)
+    if (url.startsWith('productos/')) {
+        return url;
+    }
+    
+    return null;
+}
+
+/**
+ * Eliminar archivo del bucket de Supabase Storage
+ * @param {string} fileUrl - URL del archivo a eliminar
+ * @returns {Promise<boolean>} - true si se eliminó correctamente, false en caso contrario
+ */
+async function deleteImageFromStorage(fileUrl) {
+    if (!fileUrl) return false;
+    
+    try {
+        const filePath = extractFilePathFromUrl(fileUrl);
+        if (!filePath) {
+            console.warn('⚠️ No se pudo extraer la ruta del archivo desde la URL:', fileUrl);
+            return false;
+        }
+        
+        // Crear cliente específico para Storage
+        let storageClient;
+        if (typeof supabase !== 'undefined' && window.SUPABASE_CONFIG) {
+            storageClient = supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey, {
+                auth: {
+                    persistSession: true,
+                    autoRefreshToken: true,
+                    detectSessionInUrl: true
+                }
+            });
+            // Copiar sesión si existe
+            if (supabaseClient && supabaseClient.auth) {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    await storageClient.auth.setSession(session);
+                }
+            }
+        } else {
+            storageClient = supabaseClient;
+        }
+        
+        if (!storageClient || !storageClient.storage) {
+            console.warn('⚠️ Cliente de Storage no disponible');
+            return false;
+        }
+        
+        console.log('🗑️ Eliminando archivo del bucket:', filePath);
+        const { error } = await storageClient.storage
+            .from('product-images')
+            .remove([filePath]);
+        
+        if (error) {
+            console.error('❌ Error al eliminar archivo del bucket:', error);
+            return false;
+        }
+        
+        console.log('✅ Archivo eliminado del bucket correctamente');
+        return true;
+    } catch (error) {
+        console.error('❌ Error al eliminar archivo del bucket:', error);
+        return false;
+    }
+}
+
+/**
  * Eliminar preview de imagen
  * @param {string} fieldName - Nombre del campo (foto, foto2)
  */
-function removeImagePreview(fieldName) {
+async function removeImagePreview(fieldName) {
     const fileInput = document.getElementById(fieldName);
     const previewDiv = document.getElementById(fieldName + 'Preview');
     const urlField = document.getElementById(fieldName + 'Url');
+    
+    // Obtener la URL de la imagen antes de limpiar
+    let imageUrl = null;
+    if (fieldName === 'foto') {
+        imageUrl = uploadedFotoUrl || (urlField ? urlField.value : null);
+    } else if (fieldName === 'foto2') {
+        imageUrl = uploadedFoto2Url || (urlField ? urlField.value : null);
+    }
+    
+    // Si hay una URL válida, eliminar el archivo del bucket
+    if (imageUrl) {
+        const deleted = await deleteImageFromStorage(imageUrl);
+        if (!deleted) {
+            console.warn('⚠️ No se pudo eliminar el archivo del bucket, pero se continuará con la eliminación local');
+        }
+    }
     
     if (fileInput) {
         fileInput.value = '';
@@ -6695,7 +7113,6 @@ let availableClients = [];
 
 async function loadClientsForProductForm() {
     if (!supabaseClient) {
-        console.warn('Supabase no disponible para cargar clientes');
         return;
     }
 

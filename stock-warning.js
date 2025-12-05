@@ -41,18 +41,13 @@ class StockWarningManager {
      */
     async getSupabaseClient() {
         try {
+            // Usar siempre el cliente compartido para evitar múltiples instancias
             if (window.universalSupabase) {
                 return await window.universalSupabase.getClient();
-            } else if (typeof supabase !== 'undefined') {
-                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-                return supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    auth: { persistSession: false }
-                });
             }
             return null;
         } catch (error) {
-            console.error('Error obteniendo cliente Supabase:', error);
+            // Error obteniendo cliente
             return null;
         }
     }
@@ -69,7 +64,7 @@ class StockWarningManager {
         try {
             const client = await this.getSupabaseClient();
             if (!client) {
-                console.warn('⚠️ No se pudo obtener cliente Supabase para verificar stock');
+                // No se pudo obtener cliente para verificar stock
                 this.isChecking = false;
                 return;
             }
@@ -92,7 +87,6 @@ class StockWarningManager {
 
             if (error) {
                 // Si la tabla no existe o hay error, mostrar aviso por seguridad
-                console.warn('⚠️ Error verificando stock:', error);
                 this.showWarning();
                 this.isChecking = false;
                 return;
@@ -100,15 +94,13 @@ class StockWarningManager {
 
             // Si no hay ningún registro con fecha de hoy, mostrar aviso
             if (!todayRecords || todayRecords.length === 0) {
-                console.log('⚠️ No hay registros de stock actualizados para el día de hoy');
                 this.showWarning();
             } else {
-                console.log('✅ Stock actualizado para el día de hoy');
+                // Stock actualizado para el día de hoy
                 this.hideWarning();
             }
 
         } catch (error) {
-            console.error('❌ Error verificando estado del stock:', error);
             // En caso de error, mostrar aviso por seguridad
             this.showWarning();
         } finally {

@@ -359,7 +359,7 @@
         let supabaseClient = null;
         let homeCategories = [];
 
-        // Inicializar Supabase
+        // Inicializar Supabase - usar siempre el cliente compartido
         async function initSupabase() {
             try {
                 if (supabaseClient) {
@@ -368,17 +368,17 @@
 
                 if (window.universalSupabase) {
                     supabaseClient = await window.universalSupabase.getClient();
-                } else if (typeof supabase !== 'undefined') {
-                    const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-                    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                        auth: { persistSession: true, autoRefreshToken: true }
-                    });
+                } else {
+                    // Esperar un momento para que universalSupabase se inicialice
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    if (window.universalSupabase) {
+                        supabaseClient = await window.universalSupabase.getClient();
+                    }
                 }
                 
                 return supabaseClient;
             } catch (error) {
-                console.error('Error al inicializar Supabase:', error);
+                // Error al inicializar
                 return null;
             }
         }
@@ -410,8 +410,7 @@
 
                 homeCategories = data || [];
 
-                // Debug: mostrar todas las categorías cargadas
-                console.log('📋 Categorías cargadas desde Supabase:', homeCategories);
+                // Categorías cargadas
                 homeCategories.forEach(cat => {
                     console.log(`  - ${cat.nombre_es}: foto = "${cat.foto}"`);
                 });

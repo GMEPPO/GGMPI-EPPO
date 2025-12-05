@@ -85,10 +85,6 @@ class DynamicProductsPage {
 
     async init() {
         try {
-            console.log('🚀 Inicializando página de productos...');
-            console.log('📌 Categoría desde URL:', this.selectedCategoryFromUrl);
-            console.log('📌 Categorías iniciales:', this.filters.categories);
-            
             // Resetear flags
             this.creatingDynamicFilters = false;
             this.skipDynamicFiltersOnInit = false;
@@ -103,8 +99,6 @@ class DynamicProductsPage {
             await this.loadHomeCategories(); // Cargar categorías para el filtro
             this.skipDynamicFiltersOnInit = false;
             
-            console.log('📌 Categorías después de loadHomeCategories:', this.filters.categories);
-            
             // Cargar productos
             await this.loadProductsFromSupabase();
             
@@ -115,16 +109,11 @@ class DynamicProductsPage {
             // Esperar a que los productos estén completamente cargados
             await this.waitForProducts();
             
-            console.log('📌 Estado después de waitForProducts:');
-            console.log('   - loadedProducts:', this.loadedProducts);
-            console.log('   - allProducts.length:', this.allProducts.length);
-            console.log('   - categorías:', this.filters.categories);
-            
             // Mostrar productos filtrados PRIMERO
             if (this.loadedProducts && this.allProducts.length > 0) {
-                this.applyFilters();
+                    this.applyFilters();
             } else {
-                console.log('⚠️ No hay productos disponibles en Supabase');
+                // No hay productos disponibles
                 this.displayProducts([]);
             }
             
@@ -133,7 +122,6 @@ class DynamicProductsPage {
             // FORZAR creación de filtros dinámicos DESPUÉS de todo lo demás
             // Esto es especialmente importante cuando viene una categoría desde URL
             if (this.filters.categories.length > 0 && this.allProducts.length > 0) {
-                console.log('🎯 FORZANDO CREACIÓN DE FILTROS DINÁMICOS...');
                 // Resetear el flag para asegurar que se puedan crear
                 this.creatingDynamicFilters = false;
                 
@@ -145,7 +133,6 @@ class DynamicProductsPage {
             }
             
         } catch (error) {
-            console.error('Error inicializando página:', error);
             this.showErrorMessage();
         }
     }
@@ -155,11 +142,8 @@ class DynamicProductsPage {
      * Se usa cuando se navega desde la página de inicio con una categoría preseleccionada
      */
     async forceDynamicFiltersCreation() {
-        console.log('🔧 forceDynamicFiltersCreation() - Inicio');
-        
         // IMPORTANTE: Asegurar que this.filters existe
         if (!this.filters) {
-            console.error('❌ this.filters es undefined en forceDynamicFiltersCreation');
             this.filters = {
                 categories: [],
                 maxPrice: 200,
@@ -174,35 +158,26 @@ class DynamicProductsPage {
             this.filters.dynamicFilters = {};
         }
         
-        console.log('   📋 Categorías:', this.filters.categories);
-        console.log('   📦 Productos:', this.allProducts?.length || 0);
-        
         // Verificar que haya categorías y productos
         if (!this.filters.categories || this.filters.categories.length === 0) {
-            console.warn('⚠️ No hay categorías seleccionadas');
             return;
         }
         
         if (!this.allProducts || this.allProducts.length === 0) {
-            console.warn('⚠️ No hay productos cargados');
             return;
         }
         
         // Verificar el contenedor
         const dynamicContainer = document.getElementById('dynamic-filters-container');
         if (!dynamicContainer) {
-            console.error('❌ No se encontró #dynamic-filters-container');
             return;
         }
         
         // Si ya hay filtros dinámicos creados, no hacer nada
         const existingFilters = dynamicContainer.querySelectorAll('.dynamic-filter-section');
         if (existingFilters.length > 0) {
-            console.log('✅ Ya existen', existingFilters.length, 'filtros dinámicos');
             return;
         }
-        
-        console.log('🔄 Creando filtros dinámicos forzadamente...');
         
         // Limpiar contenedor y resetear flag
         dynamicContainer.innerHTML = '';
@@ -213,7 +188,6 @@ class DynamicProductsPage {
         
         // Verificar si se crearon
         const newFilters = dynamicContainer.querySelectorAll('.dynamic-filter-section');
-        console.log('✅ Filtros dinámicos creados:', newFilters.length);
     }
 
     /**
@@ -224,40 +198,32 @@ class DynamicProductsPage {
         
         while (!this.loadedProducts || this.allProducts.length === 0) {
             if (Date.now() - startTime > maxWait) {
-                console.warn('⏱️ Timeout esperando productos');
                 break;
             }
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        console.log(`✅ Productos listos: ${this.allProducts.length} productos en ${Date.now() - startTime}ms`);
     }
 
     async initializeSupabase() {
         // Usar configuración universal si está disponible
         if (typeof window !== 'undefined' && window.universalSupabase) {
-            console.log('🔄 Usando configuración universal de Supabase...');
             this.supabase = await window.universalSupabase.getClient();
-            console.log('✅ Supabase inicializado con configuración universal');
             return;
         }
 
-        // Fallback a configuración manual
-        console.log('🔄 Usando configuración manual de Supabase...');
-        const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-        
-        // Verificar que supabase esté disponible
-        if (typeof supabase === 'undefined') {
-            throw new Error('Supabase no está disponible. Verifica que el script esté cargado.');
-        }
-        
-        this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                persistSession: false
+        // Usar siempre el cliente compartido para evitar múltiples instancias
+        if (window.universalSupabase) {
+            this.supabase = await window.universalSupabase.getClient();
+        } else {
+            // Esperar un momento para que universalSupabase se inicialice
+            await new Promise(resolve => setTimeout(resolve, 200));
+            if (window.universalSupabase) {
+                this.supabase = await window.universalSupabase.getClient();
+            } else {
+                throw new Error('Error de configuración: La biblioteca requerida no está disponible.');
             }
-        });
-        console.log('✅ Supabase inicializado correctamente');
+        }
     }
 
     async loadHomeCategories() {
@@ -274,7 +240,6 @@ class DynamicProductsPage {
                 .order('orden', { ascending: true });
 
             if (error) {
-                console.error('❌ Error cargando categorías:', error);
                 return;
             }
 
@@ -283,18 +248,13 @@ class DynamicProductsPage {
             // Renderizar categorías en los filtros
             this.renderCategoryFilters();
         } catch (error) {
-            console.error('❌ Error en loadHomeCategories:', error);
+            // Error al cargar categorías
         }
     }
 
     renderCategoryFilters() {
-        console.log('🎨 renderCategoryFilters() iniciado');
-        console.log('   📌 selectedCategoryFromUrl:', this.selectedCategoryFromUrl);
-        console.log('   📋 filters.categories actual:', this.filters.categories);
-        
         const container = document.getElementById('category-filters-container');
         if (!container) {
-            console.error('❌ No se encontró #category-filters-container');
             return;
         }
 
@@ -303,7 +263,6 @@ class DynamicProductsPage {
             return;
         }
 
-        console.log('   📚 homeCategories:', this.homeCategories.length, 'categorías');
 
         const currentLang = this.currentLanguage || localStorage.getItem('language') || 'pt';
         
@@ -324,13 +283,11 @@ class DynamicProductsPage {
                 const categoryValue = this.normalizeCategoryName(matchingCategory.nombre_es);
                 if (!categoriesToUse.includes(categoryValue)) {
                     categoriesToUse = [categoryValue];
-                    console.log('📌 Categoría desde URL agregada:', categoryValue);
                 }
             }
         }
         
         const selectedCategories = new Set(categoriesToUse);
-        console.log('   ✅ Categorías a usar:', Array.from(selectedCategories));
         
         let html = '';
         this.homeCategories.forEach((category, index) => {
@@ -355,7 +312,7 @@ class DynamicProductsPage {
         });
 
         container.innerHTML = html;
-        
+
         // Actualizar this.filters.categories con las categorías seleccionadas
         this.filters.categories = Array.from(selectedCategories);
         
@@ -370,15 +327,10 @@ class DynamicProductsPage {
             }
         }
         
-        console.log('   📋 filters.categories final:', this.filters.categories);
-        
         // Cargar filtros dinámicos para las categorías seleccionadas
         // PERO solo si no estamos en la inicialización (los productos deben estar cargados primero)
         if (!this.skipDynamicFiltersOnInit) {
-            console.log('🔄 Cargando filtros dinámicos desde renderCategoryFilters');
-            this.updateDynamicFilters();
-        } else {
-            console.log('⏸️ Saltando filtros dinámicos durante inicialización (skipDynamicFiltersOnInit=true)');
+        this.updateDynamicFilters();
         }
     }
 
@@ -421,8 +373,6 @@ class DynamicProductsPage {
 
     async loadProductsFromSupabase() {
         try {
-            console.log('🔄 Cargando productos desde tabla `products`...');
-            console.log('📊 Cliente Supabase:', this.supabase);
 
             if (!this.supabase) {
                 throw new Error('Cliente Supabase no inicializado');
@@ -451,7 +401,6 @@ class DynamicProductsPage {
                     // Verificar que no hay productos con false (no deberían aparecer por el filtro)
                     const productosConFalse = data.filter(p => p.visible_en_catalogo === false);
                     if (productosConFalse.length > 0) {
-                        console.warn('⚠️ Se encontraron productos con visible_en_catalogo = false que no deberían aparecer:', productosConFalse.length);
                         // Filtrar manualmente para asegurar que no aparezcan
                         data = data.filter(p => p.visible_en_catalogo !== false);
                     }
@@ -459,7 +408,6 @@ class DynamicProductsPage {
                 
                 if (error) {
                     // Si hay error (probablemente porque la columna no existe), cargar todos los productos
-                    console.warn('⚠️ Error al filtrar por visible_en_catalogo, cargando todos los productos:', error.message);
                     const allResult = await this.supabase
                         .from('products')
                         .select('*')
@@ -479,12 +427,8 @@ class DynamicProductsPage {
                         return product.visible_en_catalogo === true;
                     });
                     
-                    console.log(`📦 Productos cargados: ${data.length} de ${allResult.data?.length || 0} totales (filtrados manualmente)`);
-                } else {
-                    console.log(`📦 Productos cargados desde Supabase: ${data?.length || 0} totales (filtrados por visible_en_catalogo)`);
                 }
             } catch (e) {
-                console.error('❌ Error al cargar productos:', e);
                 throw e;
             }
             
@@ -513,59 +457,41 @@ class DynamicProductsPage {
                     try {
                         structuredData = JSON.parse(product.category_fields);
                     } catch (e) {
-                        console.warn('Error parseando category_fields del producto:', product.id, e);
                     }
                 }
                 
                 // Parsear visible_fields (JSONB) si existe
                 if (product.visible_fields) {
-                    console.log(`🔍 Parseando visible_fields para producto ${product.id}:`, product.visible_fields, typeof product.visible_fields);
-                    
                     if (typeof product.visible_fields === 'string') {
                         // Si es un string, intentar parsearlo
                         try {
                             product.visible_fields = JSON.parse(product.visible_fields);
-                            console.log(`✅ visible_fields parseado desde string:`, product.visible_fields);
                         } catch (e) {
-                            console.warn('❌ Error parseando visible_fields del producto:', product.id, e);
                             product.visible_fields = [];
                         }
                     } else if (Array.isArray(product.visible_fields)) {
                         // Ya es un array, usar directamente
-                        console.log(`✅ visible_fields ya es un array:`, product.visible_fields);
                         // Asegurar que cada elemento sea un objeto válido
                         product.visible_fields = product.visible_fields.map((field, idx) => {
-                            console.log(`   📋 Campo ${idx}:`, field, typeof field);
-                            
                             // Si el elemento es un string que parece JSON (empieza con { o "), parsearlo
                             if (typeof field === 'string' && (field.startsWith('{') || field.startsWith('"'))) {
                                 try {
                                     const parsed = JSON.parse(field);
-                                    console.log(`   ✅ Campo ${idx} parseado desde string JSON:`, parsed);
                                     return parsed;
                                 } catch (e) {
-                                    console.warn(`   ⚠️ Error parseando campo ${idx} como JSON:`, field, e);
                                     // Si falla el parsing, tratar como field_id simple
                                     return { field_id: field };
                                 }
                             } else if (typeof field === 'string') {
                                 // Formato antiguo: solo field_id, convertir a objeto
-                                console.log(`   🔄 Convirtiendo string a objeto: ${field}`);
                                 return { field_id: field };
                             } else if (typeof field === 'object' && field !== null) {
                                 // Formato nuevo: objeto con field_id, label_es, label_pt
-                                console.log(`   ✅ Objeto válido:`, field);
                                 return field;
                             }
-                            console.log(`   ⚠️ Campo inválido, omitiendo`);
                             return null;
                         }).filter(Boolean);
-                        console.log(`✅ visible_fields procesado:`, product.visible_fields);
-                    } else {
-                        console.warn(`⚠️ visible_fields tiene un tipo inesperado:`, typeof product.visible_fields, product.visible_fields);
                     }
-                } else {
-                    console.log(`ℹ️ Producto ${product.id} no tiene visible_fields`);
                 }
                 
                 // PRIORIDAD 2: Si no hay datos en category_fields, extraer del campo caracteristicas (compatibilidad con productos antiguos)
@@ -576,7 +502,6 @@ class DynamicProductsPage {
                             structuredData = JSON.parse(structuredMatch[1]);
                         }
                     } catch (e) {
-                        console.warn('Error parseando datos estructurados del producto:', product.id, e);
                     }
                 }
                 
@@ -632,7 +557,7 @@ class DynamicProductsPage {
             }
             
         } catch (error) {
-            console.error('❌ Error al cargar productos desde Supabase:', error);
+            // Error al cargar productos
             this.allProducts = [];
             this.loadedProducts = true;
             this.showErrorMessage(`Error: ${error.message}`);
@@ -640,9 +565,6 @@ class DynamicProductsPage {
     }
 
     showLoadingMessage(message) {
-        // Mensajes de carga removidos según solicitud del usuario
-        // Solo mantener en consola para debugging
-        console.log('Loading message:', message);
         const productsHeader = document.querySelector('.products-header');
         if (productsHeader) {
             productsHeader.style.display = 'none';
@@ -658,15 +580,11 @@ class DynamicProductsPage {
         
         const errorMessage = customMessage || translations[this.currentLanguage] || translations.pt;
         this.showLoadingMessage(errorMessage);
-        console.error('🚨 Error mostrado al usuario:', errorMessage);
     }
 
     setupEventListeners() {
-        console.log('🔗 Configurando event listeners...');
-        
         // Verificar si ya se configuraron los listeners para evitar duplicados
         if (this.eventListenersSetup) {
-            console.warn('⚠️ Event listeners ya configurados, omitiendo duplicado');
             return;
         }
         
@@ -696,9 +614,6 @@ class DynamicProductsPage {
                     this.applyFilters();
                 });
                 priceSlider.dataset.listenerAdded = 'true';
-                console.log('✅ Slider de precio configurado');
-            } else {
-                console.log('⚠️ Event listener de precio ya existe, omitiendo duplicado');
             }
         }
         
@@ -708,7 +623,7 @@ class DynamicProductsPage {
         // Marcar que los listeners están configurados
         this.eventListenersSetup = true;
     }
-    
+
     /**
      * Configurar botón de ordenamiento desplegable
      */
@@ -718,7 +633,6 @@ class DynamicProductsPage {
         const sortOptions = document.querySelectorAll('.sort-option');
         
         if (!dropdownBtn || !dropdownContainer) {
-            console.log('⚠️ No se encontró el botón de ordenamiento');
             return;
         }
         
@@ -759,15 +673,12 @@ class DynamicProductsPage {
                 option.dataset.listenerAdded = 'true';
             }
         });
-        
-        console.log('✅ Botón de ordenamiento desplegable configurado');
     }
     
     /**
      * Manejar ordenamiento de productos
      */
     handleSort(sortType) {
-        console.log('🔄 Ordenando por:', sortType);
         this.currentSort = sortType;
         
         // Re-aplicar filtros con el nuevo ordenamiento
@@ -821,27 +732,19 @@ class DynamicProductsPage {
     }
 
     handleCategoryFilter() {
-        console.log('🔄 handleCategoryFilter() llamado');
-        
         // Recopilar categorías seleccionadas
         this.filters.categories = [];
         const categoryCheckboxes = document.querySelectorAll('#category-filters-container input[type="checkbox"]');
-        
-        console.log('📋 Checkboxes encontrados:', categoryCheckboxes.length);
         
         categoryCheckboxes.forEach(checkbox => {
             if (checkbox.checked) {
                 const categoryValue = this.normalizeCategoryName(checkbox.value);
                 this.filters.categories.push(categoryValue);
-                console.log(`  ✅ Categoría seleccionada: ${checkbox.value} → normalizado: ${categoryValue}`);
             }
         });
         
-        console.log('📋 Categorías seleccionadas:', this.filters.categories);
-        
         // Si no hay ninguna seleccionada, limpiar filtros dinámicos
         if (this.filters.categories.length === 0) {
-            console.log('⚠️ No hay categorías seleccionadas, limpiando filtros dinámicos');
             const dynamicContainer = document.getElementById('dynamic-filters-container');
             if (dynamicContainer) {
                 dynamicContainer.innerHTML = '';
@@ -863,13 +766,11 @@ class DynamicProductsPage {
             `;
         }
         
-        console.log('🔄 Llamando a updateDynamicFilters()...');
         // Actualizar filtros dinámicos y aplicar
         this.updateDynamicFilters().then(() => {
-            console.log('✅ updateDynamicFilters() completado, aplicando filtros...');
             this.applyFilters();
         }).catch(error => {
-            console.error('❌ Error en updateDynamicFilters():', error);
+            // Error al actualizar filtros dinámicos
         });
     }
 
@@ -877,20 +778,14 @@ class DynamicProductsPage {
         const selected = new Set(this.filters.categories);
         const categoryCheckboxes = document.querySelectorAll('.filter-section:first-of-type input[type="checkbox"]');
         
-        console.log('🔄 Actualizando checkboxes de categorías:', Array.from(selected));
-        console.log('📋 Checkboxes encontrados:', categoryCheckboxes.length);
-        
         let anyChanged = false;
         categoryCheckboxes.forEach(checkbox => {
             const wasChecked = checkbox.checked;
             const shouldBeChecked = selected.has(checkbox.value);
             checkbox.checked = shouldBeChecked;
             
-            console.log(`  Checkbox ${checkbox.value}: ${wasChecked ? '✓' : '✗'} → ${shouldBeChecked ? '✓' : '✗'}`);
-            
             if (wasChecked !== checkbox.checked) {
                 anyChanged = true;
-                console.log(`  ${checkbox.checked ? '✅' : '❌'} Checkbox ${checkbox.value} cambiado a: ${checkbox.checked}`);
             }
         });
         
@@ -898,8 +793,6 @@ class DynamicProductsPage {
         const checkedBoxes = Array.from(categoryCheckboxes)
             .filter(cb => cb.checked)
             .map(cb => cb.value);
-        console.log('✅ Checkboxes marcados después de actualizar:', checkedBoxes);
-        console.log('📋 Categorías esperadas:', Array.from(selected));
         
         // NO sincronizar automáticamente filters.categories con los checkboxes
         // Esto puede causar conflictos cuando se accede desde diferentes lugares
@@ -914,24 +807,16 @@ class DynamicProductsPage {
             
             if (isDifferent) {
                 // Solo sincronizar si realmente es diferente y no hay categoría de URL
-                console.log('🔄 Sincronizando filters.categories con checkboxes (sin categoría de URL)');
                 this.filters.categories = checkedBoxes;
-                console.log('✅ Sincronizado:', this.filters.categories);
             }
         }
     }
 
     async updateDynamicFilters() {
-        console.log('🔄 updateDynamicFilters() iniciado');
-        console.log('   📋 Categorías:', this.filters.categories);
-        console.log('   📦 Productos cargados:', this.loadedProducts, '| Total:', this.allProducts?.length || 0);
-        console.log('   🚫 creatingDynamicFilters:', this.creatingDynamicFilters);
-        
         const dynamicContainer = document.getElementById('dynamic-filters-container');
         
         // Si los productos no están cargados, esperar
         if (!this.loadedProducts || this.allProducts.length === 0) {
-            console.log('⏳ Esperando productos antes de crear filtros dinámicos...');
             
             // Mostrar loading mientras esperamos
             if (dynamicContainer) {
@@ -948,13 +833,11 @@ class DynamicProductsPage {
             
             // Verificar nuevamente
             if (!this.loadedProducts || this.allProducts.length === 0) {
-                console.warn('⚠️ No se pudieron cargar los productos para los filtros dinámicos');
                 if (dynamicContainer) {
                     dynamicContainer.innerHTML = '';
                 }
                 return;
             }
-            console.log('✅ Productos cargados después de esperar:', this.allProducts.length);
         }
         
         // IMPORTANTE: Resetear el flag para permitir nueva creación
@@ -967,10 +850,8 @@ class DynamicProductsPage {
         
         // Si hay categorías seleccionadas, cargar filtros dinámicos desde category_fields
         if (this.filters.categories.length > 0) {
-            console.log('🎯 Llamando a createDynamicFilters() para categorías:', this.filters.categories);
             await this.createDynamicFilters();
         } else {
-            console.log('⚠️ No hay categorías seleccionadas, limpiando filtros dinámicos');
             // Si no hay categorías seleccionadas, limpiar filtros dinámicos
             if (dynamicContainer) {
                 dynamicContainer.innerHTML = '';
@@ -994,7 +875,6 @@ class DynamicProductsPage {
             const section = document.getElementById(sectionId);
             if (section) {
                 section.style.display = 'none';
-                console.log(`✅ Filtro estático oculto inmediatamente: ${sectionId}`);
             }
         });
         
@@ -1007,7 +887,6 @@ class DynamicProductsPage {
                     <p style="margin: 0; font-size: 14px;">Cargando filtros...</p>
                 </div>
             `;
-            console.log('🔄 Mostrando loading en filtros dinámicos');
         }
     }
 
@@ -1277,12 +1156,10 @@ class DynamicProductsPage {
     async createDynamicFilters() {
         // Protección contra llamadas múltiples simultáneas
         if (this.creatingDynamicFilters) {
-            console.log('⚠️ createDynamicFilters ya está en ejecución, esperando...');
             // Esperar a que termine la ejecución anterior
             await new Promise(resolve => setTimeout(resolve, 200));
             if (this.creatingDynamicFilters) {
-                console.log('⚠️ Aún en ejecución, saltando...');
-                return;
+            return;
             }
         }
         
@@ -1291,7 +1168,6 @@ class DynamicProductsPage {
         try {
             // IMPORTANTE: Asegurar que this.filters y this.filters.dynamicFilters existen
             if (!this.filters) {
-                console.error('❌ this.filters es undefined, inicializando...');
                 this.filters = {
                     categories: [],
                     maxPrice: 200,
@@ -1303,16 +1179,10 @@ class DynamicProductsPage {
                 };
             }
             if (!this.filters.dynamicFilters) {
-                console.log('⚠️ this.filters.dynamicFilters era undefined, inicializando...');
                 this.filters.dynamicFilters = {};
             }
             
-            console.log('🔄 CREANDO FILTROS DINÁMICOS');
-            console.log('📋 Categorías seleccionadas:', this.filters.categories);
-            console.log('📦 Productos cargados:', this.allProducts?.length || 0);
-            
             if (this.filters.categories.length === 0) {
-                console.log('⚠️ No hay categorías seleccionadas, no se crean filtros dinámicos');
                 // Eliminar filtros dinámicos anteriores
                 document.querySelectorAll('.dynamic-filter-section').forEach(section => {
                     section.remove();
@@ -1322,7 +1192,6 @@ class DynamicProductsPage {
             }
             
             if (!this.allProducts || this.allProducts.length === 0) {
-                console.log('⚠️ No hay productos cargados, no se pueden crear filtros dinámicos');
                 this.creatingDynamicFilters = false;
                 return;
             }
@@ -1338,54 +1207,35 @@ class DynamicProductsPage {
                 const categoryIds = [];
                 
                 for (const categoryValue of this.filters.categories) {
-                    console.log(`\n🔍 [1️⃣] Buscando categoría: "${categoryValue}"`);
-                    console.log(`   📝 Tipo de categoryValue:`, typeof categoryValue);
-                    
                     // Normalizar el valor de búsqueda
                     const normalizedSearchValue = this.normalizeCategoryName(categoryValue);
-                    console.log(`   🔧 Valor normalizado para búsqueda: "${normalizedSearchValue}"`);
                     
                     // Primero intentar buscar en homeCategories (categorías ya cargadas)
                     let category = null;
                     if (this.homeCategories && this.homeCategories.length > 0) {
-                        console.log(`   📚 Buscando en homeCategories (${this.homeCategories.length} categorías)...`);
                         this.homeCategories.forEach((cat, idx) => {
                             const catValueNormalized = this.normalizeCategoryName(cat.nombre_es);
-                            console.log(`      [${idx}] "${cat.nombre_es}" → normalizado: "${catValueNormalized}"`);
                             if (catValueNormalized === normalizedSearchValue) {
                                 category = cat;
-                                console.log(`      ✅ ¡COINCIDENCIA ENCONTRADA!`);
                             }
                         });
-                    } else {
-                        console.log(`   ⚠️ homeCategories está vacío o no existe`);
                     }
                     
                     // Si no se encuentra en homeCategories, buscar directamente en categorias_geral
                     if (!category) {
-                        console.log(`   📡 Buscando directamente en categorias_geral...`);
                         const { data: categoriesFromDb, error: catError } = await this.supabase
                             .from('categorias_geral')
                             .select('id, nombre_es, nombre_pt, tipo, is_active')
                             .eq('tipo', 'home')
                             .eq('is_active', true);
                         
-                        console.log(`   📊 Resultado de búsqueda en categorias_geral:`, {
-                            error: catError,
-                            count: categoriesFromDb?.length || 0,
-                            data: categoriesFromDb
-                        });
-                        
                         if (catError) {
-                            console.error(`   ❌ Error buscando categorías:`, catError);
+                            // Error buscando categorías
                         } else if (categoriesFromDb && categoriesFromDb.length > 0) {
-                            console.log(`   🔍 Comparando ${categoriesFromDb.length} categorías...`);
                             categoriesFromDb.forEach((cat, idx) => {
                                 const catValueNormalized = this.normalizeCategoryName(cat.nombre_es);
-                                console.log(`      [${idx}] "${cat.nombre_es}" (ID: ${cat.id}) → normalizado: "${catValueNormalized}"`);
                                 if (catValueNormalized === normalizedSearchValue) {
                                     category = cat;
-                                    console.log(`      ✅ ¡COINCIDENCIA ENCONTRADA!`);
                                 }
                             });
                             
@@ -1394,7 +1244,6 @@ class DynamicProductsPage {
                                 const exists = this.homeCategories.find(c => c.id === category.id);
                                 if (!exists) {
                                     this.homeCategories.push(category);
-                                    console.log(`   ✅ Categoría agregada a homeCategories para cache`);
                                 }
                             }
                         }
@@ -1402,22 +1251,13 @@ class DynamicProductsPage {
                     
                     if (category && category.id) {
                         categoryIds.push(category.id);
-                        console.log(`   ✅ Categoría encontrada: "${category.nombre_es}" (ID: ${category.id})`);
-                    } else {
-                        console.warn(`   ⚠️ No se encontró la categoría "${categoryValue}" (normalizado: "${normalizedSearchValue}")`);
-                        console.warn(`   💡 Verifica que el nombre de la categoría coincida exactamente`);
                     }
                 }
-                
-                console.log(`\n📋 [1️⃣] IDs de categorías encontradas:`, categoryIds);
-                console.log(`   Total: ${categoryIds.length} categoría(s)`);
                 
                 // ============================================
                 // 2️⃣ CARGAR CAMPOS DESDE SUPABASE
                 // ============================================
                 if (categoryIds.length > 0) {
-                    console.log(`\n🔍 [2️⃣] Cargando category_fields desde Supabase...`);
-                    console.log(`   📋 IDs a buscar:`, categoryIds);
                     
                     // Primero verificar que la tabla existe y tiene datos
                     const { data: testFields, error: testError } = await this.supabase
@@ -1425,35 +1265,7 @@ class DynamicProductsPage {
                         .select('categoria_id, field_id, show_in_filters')
                         .limit(5);
                     
-                    console.log(`   🧪 Test de conexión a category_fields:`, {
-                        error: testError,
-                        sampleCount: testFields?.length || 0,
-                        sample: testFields
-                    });
-                    
                     // Cargar campos desde la BD que tengan show_in_filters === true
-                    // IMPORTANTE: Intentar primero sin el filtro show_in_filters para ver todos los campos
-                    console.log(`   🔍 Primero: Cargando TODOS los campos (sin filtro show_in_filters) para debug...`);
-                    const { data: allFieldsTest, error: testError2 } = await this.supabase
-                        .from('category_fields')
-                        .select('*')
-                        .in('categoria_id', categoryIds)
-                        .order('orden', { ascending: true });
-                    
-                    console.log(`   📊 Todos los campos encontrados (sin filtro):`, {
-                        error: testError2,
-                        count: allFieldsTest?.length || 0,
-                        fields: allFieldsTest?.map(f => ({
-                            id: f.id,
-                            field_id: f.field_id,
-                            categoria_id: f.categoria_id,
-                            label_es: f.label_es,
-                            show_in_filters: f.show_in_filters,
-                            show_in_filters_type: typeof f.show_in_filters
-                        }))
-                    });
-                    
-                    // Ahora cargar solo los que tienen show_in_filters === true
                     // IMPORTANTE: También incluir los que tienen show_in_filters = null (compatibilidad)
                     const { data: fieldsFromDb, error } = await this.supabase
                         .from('category_fields')
@@ -1462,44 +1274,16 @@ class DynamicProductsPage {
                         .or('show_in_filters.eq.true,show_in_filters.is.null') // true O null (compatibilidad)
                         .order('orden', { ascending: true });
                     
-                    console.log(`\n📊 [2️⃣] Resultado del SELECT a category_fields:`, {
-                        error: error,
-                        errorCode: error?.code,
-                        errorMessage: error?.message,
-                        fieldsCount: fieldsFromDb?.length || 0,
-                        fields: fieldsFromDb
-                    });
-                    
                     if (error) {
-                        console.error(`   ❌ Error cargando category_fields:`, error);
-                        console.error(`   📝 Detalles del error:`, {
-                            code: error.code,
-                            message: error.message,
-                            details: error.details,
-                            hint: error.hint
-                        });
-                        
                         // Verificar si es un error de RLS
                         if (error.message?.includes('RLS') || error.message?.includes('policy') || error.message?.includes('permission')) {
-                            console.error(`   ⚠️ POSIBLE PROBLEMA DE RLS (Row Level Security)`);
-                            console.error(`   💡 Verifica las políticas RLS en Supabase para category_fields`);
+                            // POSIBLE PROBLEMA DE RLS (Row Level Security)
+                            // Verifica las políticas RLS para category_fields
                         }
                     } else if (fieldsFromDb && fieldsFromDb.length > 0) {
-                        console.log(`   ✅ Campos encontrados en BD: ${fieldsFromDb.length}`);
                         const currentLang = this.currentLanguage || localStorage.getItem('language') || 'pt';
                         
                         fieldsFromDb.forEach((field, idx) => {
-                            console.log(`   [${idx}] Campo:`, {
-                                id: field.id,
-                                field_id: field.field_id,
-                                categoria_id: field.categoria_id,
-                                label_es: field.label_es,
-                                label_pt: field.label_pt,
-                                field_type: field.field_type,
-                                show_in_filters: field.show_in_filters,
-                                orden: field.orden
-                            });
-                            
                             const label = currentLang === 'es' ? field.label_es : 
                                          currentLang === 'en' ? (field.label_en || field.label_es) : 
                                          field.label_pt;
@@ -1523,7 +1307,6 @@ class DynamicProductsPage {
                                     label_pt: opt.label_pt || opt.value,
                                     label_en: opt.label_en || opt.label_es || opt.value
                                 }));
-                                console.log(`      📋 Opciones del select (con todos los idiomas):`, fieldObj.options);
                             }
                             
                             // Guardar también los labels originales del campo para poder cambiar idioma
@@ -1556,14 +1339,8 @@ class DynamicProductsPage {
                             if (!existingFieldKey) {
                                 // Campo nuevo - agregarlo
                                 allFields.set(field.field_id, fieldObj);
-                                console.log(`      ✅ Campo agregado a allFields:`);
-                                console.log(`         - field_id: ${field.field_id}`);
-                                console.log(`         - label normalizado: ${normalizedLabel}`);
-                                console.log(`         - label_es: ${field.label_es}`);
-                                console.log(`         - label_pt: ${field.label_pt}`);
                             } else {
                                 // ✅ COMBINAR opciones de campos con mismo label
-                                console.log(`      🔄 Campo con mismo nombre encontrado: "${normalizedLabel}" (${field.field_id} → ${existingFieldKey})`);
                                 const existingField = allFields.get(existingFieldKey);
                                 
                                 // Combinar opciones de select si ambos tienen
@@ -1572,7 +1349,6 @@ class DynamicProductsPage {
                                     fieldObj.options.forEach(opt => {
                                         if (!existingValues.has(String(opt.value).toLowerCase())) {
                                             existingField.options.push(opt);
-                                            console.log(`         ➕ Opción añadida: ${opt.value}`);
                                         }
                                     });
                                 }
@@ -1582,60 +1358,38 @@ class DynamicProductsPage {
                                     existingField.originalFieldIds = [existingFieldKey];
                                 }
                                 existingField.originalFieldIds.push(field.field_id);
-                                console.log(`         📋 Field IDs combinados: ${existingField.originalFieldIds.join(', ')}`);
                             }
                         });
-                        console.log(`   ✅ Total campos cargados desde BD: ${allFields.size}`);
-                    } else {
-                        console.log(`   ℹ️ No se encontraron campos con show_in_filters=true para estas categorías`);
-                        console.log(`   💡 Verifica que:`);
-                        console.log(`      - Los campos existen en category_fields`);
-                        console.log(`      - Tienen categoria_id que coincida con: ${categoryIds.join(', ')}`);
-                        console.log(`      - Tienen show_in_filters = true (booleano, no string)`);
                     }
-                } else {
-                    console.warn(`\n⚠️ [2️⃣] No se encontraron IDs de categorías válidas`);
-                    console.warn(`   💡 No se puede hacer SELECT a category_fields sin IDs de categorías`);
                 }
             } catch (error) {
-                console.error(`\n❌ [ERROR GENERAL] Error cargando campos desde BD:`, error);
-                console.error(`   Stack trace:`, error.stack);
+                // Error cargando campos desde BD
             }
         } else {
-            console.error(`\n❌ Supabase client no está inicializado`);
+            // Client no está inicializado
         }
         
         // ============================================
         // 3️⃣ FALLBACK A categoryFieldsConfig
         // ============================================
         if (allFields.size === 0) {
-            console.log(`\n🔄 [3️⃣] Usando fallback a categoryFieldsConfig...`);
-            console.log(`   📋 categoryFieldsConfig disponible:`, Object.keys(this.categoryFieldsConfig || {}));
+            // Usando fallback a categoryFieldsConfig
             
             this.filters.categories.forEach(category => {
                 const normalizedCategory = this.normalizeCategoryName(category);
-                console.log(`   🔍 Buscando campos para categoría: "${category}" (normalizado: "${normalizedCategory}")`);
                 
                 // Intentar con el nombre original y normalizado
                 const fields = this.categoryFieldsConfig[category] || 
                               this.categoryFieldsConfig[normalizedCategory] || 
                               [];
                 
-                console.log(`   📊 Campos encontrados en config:`, fields.length);
-                if (fields.length === 0) {
-                    console.log(`   ⚠️ No hay campos configurados para la categoría "${category}"`);
-                    console.log(`   💡 Keys disponibles en categoryFieldsConfig:`, Object.keys(this.categoryFieldsConfig || {}));
-                } else {
-                    console.log(`   ✅ Campos en config:`, fields.map(f => f.id || f.label));
-                }
+                // Campos encontrados en config
                 
                 fields.forEach(field => {
                     if (!allFields.has(field.id)) {
                         allFields.set(field.id, field);
-                        console.log(`      ✅ Campo agregado desde config: ${field.id}`);
                     } else {
                         // Combinar opciones de campos duplicados
-                        console.log(`      🔄 Campo duplicado en config: ${field.id} - combinando...`);
                         const existingField = allFields.get(field.id);
                         if (field.options && existingField.options) {
                             const existingValues = new Set(existingField.options.map(o => o.value));
@@ -1649,31 +1403,18 @@ class DynamicProductsPage {
                 });
             });
             
-            console.log(`   📊 Total campos después del fallback: ${allFields.size}`);
         }
-
-        console.log(`\n📊 ============================================`);
-        console.log(`📊 RESUMEN DE CAMPOS ENCONTRADOS`);
-        console.log(`📊 ============================================`);
-        console.log(`📊 Total campos únicos a crear filtros: ${allFields.size}`);
+        // Total campos únicos a crear filtros
         if (allFields.size > 0) {
-            console.log(`📋 Lista de campos:`, Array.from(allFields.keys()).map(id => {
-                const f = allFields.get(id);
-                return `${id} (${f.label}, tipo: ${f.type})`;
-            }));
             // Los campos se guardarán DESPUÉS de crear las secciones para incluir traducciones
         } else {
-            console.warn(`⚠️ NO SE ENCONTRARON CAMPOS PARA CREAR FILTROS`);
-            console.warn(`💡 Posibles causas:`);
-            console.warn(`   1. Las categorías no se encontraron en categorias_geral`);
-            console.warn(`   2. No hay category_fields con show_in_filters=true para esas categorías`);
-            console.warn(`   3. Problema de RLS en Supabase`);
-            console.warn(`   4. Los nombres de categorías no coinciden (normalización)`);
+            // NO SE ENCONTRARON CAMPOS PARA CREAR FILTROS
+            // Posibles causas: categorías no encontradas, no hay category_fields con show_in_filters=true, problema de RLS, o nombres no coinciden
         }
 
         // Eliminar filtros dinámicos anteriores Y sus event listeners
         const oldSections = document.querySelectorAll('.dynamic-filter-section');
-        console.log(`\n🗑️ Eliminando ${oldSections.length} filtros dinámicos anteriores...`);
+        // Eliminando filtros dinámicos anteriores
         oldSections.forEach(section => {
             // Eliminar event listeners antes de remover el elemento
             const optionsContainer = section.querySelector('.filter-options');
@@ -1681,7 +1422,6 @@ class DynamicProductsPage {
                 // Clonar el elemento para eliminar todos los event listeners
                 const newContainer = optionsContainer.cloneNode(true);
                 optionsContainer.parentNode.replaceChild(newContainer, optionsContainer);
-                console.log(`   🗑️ Event listeners eliminados de ${section.id}`);
             }
             section.remove();
         });
@@ -1690,58 +1430,29 @@ class DynamicProductsPage {
         const dynamicContainer = document.getElementById('dynamic-filters-container');
         
         if (!dynamicContainer) {
-            console.error('❌ No se encontró el contenedor #dynamic-filters-container');
             this.creatingDynamicFilters = false;
             return;
         }
-        
-        console.log('✅ Contenedor de filtros dinámicos encontrado');
 
         // Crear filtros para cada campo de filtros
         let filtersCreated = 0;
         let filtersSkipped = 0;
         
-        console.log(`📊 Total campos a procesar: ${allFields.size}`);
-        
         allFields.forEach((field, fieldId) => {
-            console.log(`🔨 Creando filtro para: ${fieldId} (${field.label})`);
             const section = this.createDynamicFilterSection(field, fieldId);
             if (section) {
                 // Insertar en el contenedor de filtros dinámicos
                 dynamicContainer.appendChild(section);
                 filtersCreated++;
-                console.log(`  ✅ Filtro creado y agregado: ${fieldId}`);
             } else {
                 filtersSkipped++;
-                console.log(`  ⚠️ No se pudo crear filtro para: ${fieldId}`);
             }
         });
-        
-        console.log(`📊 Resumen: ${filtersCreated} filtros creados, ${filtersSkipped} omitidos`);
 
         // ✅ GUARDAR CAMPOS PARA TRADUCCIONES (DESPUÉS de crear secciones para incluir traducciones)
         // Las traducciones se agregan en createDynamicFilterSection
         if (allFields.size > 0) {
             this.dynamicFilterFields = new Map(allFields);
-            console.log(`💾 Campos guardados con traducciones en this.dynamicFilterFields`);
-            // Log de verificación
-            allFields.forEach((field, id) => {
-                if (field.translations) {
-                    console.log(`   📝 ${id} tiene ${Object.keys(field.translations).length} traducciones`);
-                }
-            });
-        }
-
-        // Solo mostrar resumen si hay algo importante que reportar
-        if (filtersCreated > 0) {
-            console.log(`✅ Filtros dinámicos creados: ${filtersCreated} de ${allFields.size} campos`);
-        } else if (allFields.size > 0) {
-            // Solo mostrar este warning una vez, no en cada ejecución
-            if (!this.hasShownNoFiltersWarning) {
-                console.warn(`⚠️ No se crearon filtros: los productos no tienen valores para los ${allFields.size} campo(s) definidos`);
-                console.warn(`💡 Verifica que los productos tengan valores en categoryFields o en campos directos (potencia, color, etc.)`);
-                this.hasShownNoFiltersWarning = true; // Marcar para no mostrar de nuevo
-            }
         }
         } finally {
             // Liberar el flag al finalizar (incluso si hay error)
@@ -1755,11 +1466,8 @@ class DynamicProductsPage {
     createDynamicFilterSection(field, fieldId) {
         // Verificar que field existe
         if (!field) {
-            console.error(`❌ createDynamicFilterSection: field es undefined para fieldId=${fieldId}`);
             return null;
         }
-        
-        console.log(`\n🔍 [4️⃣] Creando sección de filtro para: ${fieldId} (${field.label || 'sin label'})`);
         
         // Obtener valores únicos de este campo de los productos
         const availableValues = new Set();
@@ -1771,7 +1479,6 @@ class DynamicProductsPage {
                 const productCategoryNormalized = this.normalizeCategoryName(product.categoria);
                 return productCategoryNormalized === normalizedCategory;
             });
-            console.log(`   📦 Productos en categoría "${category}" (normalizado: "${normalizedCategory}"): ${productsInCategory.length}`);
             
             productsInCategory.forEach((product, idx) => {
                 // Obtener el fieldIdBase (sin sufijo de categoría)
@@ -1782,11 +1489,6 @@ class DynamicProductsPage {
                     ? [...new Set([fieldId, fieldIdBase, ...field.originalFieldIds, ...field.originalFieldIds.map(id => id.includes('_') ? id.split('_')[0] : id)])]
                     : [fieldIdBase, fieldId];
                 
-                // Solo mostrar log para los primeros productos (reducir spam)
-                if (idx < 2) {
-                    console.log(`      🔍 Producto [${idx}]: Buscando valor para fieldIds: ${allFieldIds.join(', ')}`);
-                }
-                
                 // Buscar valores en AMBOS idiomas para campos de texto
                 let valueEs = null;
                 let valuePt = null;
@@ -1796,7 +1498,6 @@ class DynamicProductsPage {
                 if (fieldIdBase === 'potencia' || fieldIdBase === 'power' || allFieldIds.some(id => id === 'potencia' || id === 'power')) {
                     valueNumeric = product.potencia ? String(product.potencia) : null;
                     if (valueNumeric) {
-                        if (idx < 2) console.log(`         ✅ Encontrado valor numérico: ${valueNumeric}`);
                         availableValues.add(valueNumeric);
                     }
                 } else {
@@ -1842,9 +1543,6 @@ class DynamicProductsPage {
                     if (valueEs) valueEs = String(valueEs).trim();
                     if (valuePt) valuePt = String(valuePt).trim();
                     
-                    console.log(`         📝 Campo "${fieldIdBase}": ES="${valueEs}", PT="${valuePt}"`);
-                    console.log(`         📋 Claves en categoryFields:`, Object.keys(cf));
-                    
                     // Agregar a availableValues con información de traducción
                     if (valueEs || valuePt) {
                         // Usar el valor español como clave interna (o portugués si no hay español)
@@ -1861,28 +1559,14 @@ class DynamicProductsPage {
                         };
                         
                         availableValues.add(internalValue);
-                        console.log(`         ✅ Valor agregado: "${internalValue}" con traducciones:`, field.translations[internalValue]);
                     }
                 }
             });
-            
-            console.log(`   📊 Valores únicos encontrados para ${fieldId}:`, Array.from(availableValues));
         });
 
-        // Solo loggear si hay valores (reducir spam en consola)
-        // console.log(`📊 Valores únicos para ${fieldId}:`, Array.from(availableValues));
-
         if (availableValues.size === 0) {
-            const fieldIdBaseForWarning = fieldId.includes('_') ? fieldId.split('_')[0] : fieldId;
-            console.warn(`⚠️ No se crea filtro para ${fieldId} - no hay valores disponibles en los productos`);
-            console.warn(`   💡 Verifica que los productos tengan valores para este campo en:`);
-            console.warn(`      - product.${fieldIdBaseForWarning} (campo directo)`);
-            console.warn(`      - product.categoryFields.${fieldId} o product.categoryFields.${fieldIdBaseForWarning}`);
-            console.warn(`      - product.attributes.${fieldId} o product.attributes.${fieldIdBaseForWarning}`);
             return null; // No crear filtro si no hay valores
         }
-        
-        console.log(`   ✅ Se crearán ${availableValues.size} opciones para el filtro ${fieldId}`);
 
         const section = document.createElement('div');
         section.className = 'filter-section dynamic-filter-section';
@@ -1896,8 +1580,6 @@ class DynamicProductsPage {
         const label = currentLang === 'es' ? (field.label_es || field.label || fieldId) :
                       currentLang === 'en' ? (field.label_en || field.label_es || field.label || fieldId) :
                       (field.label_pt || field.label || fieldId);
-        
-        console.log(`   📝 Label del filtro: "${label}" (idioma: ${currentLang}, labels disponibles: es=${field.label_es}, pt=${field.label_pt})`);
         
         section.innerHTML = `
             <h4 class="filter-title">${label}</h4>
@@ -1914,14 +1596,10 @@ class DynamicProductsPage {
             if (!optionsContainer.dataset.listenerAdded) {
                 optionsContainer.addEventListener('change', (e) => {
                     if (e.target.type === 'checkbox' && e.target.closest(`#dynamicOptions_${fieldId}`)) {
-                        console.log(`📝 Checkbox cambiado en ${fieldId}:`, e.target.value, e.target.checked);
                         this.handleDynamicFilter(fieldId);
                     }
                 });
                 optionsContainer.dataset.listenerAdded = 'true';
-                console.log(`✅ Event listener agregado para filtro ${fieldId}`);
-            } else {
-                console.log(`⚠️ Event listener ya existe para filtro ${fieldId}, omitiendo duplicado`);
             }
         }
 
@@ -1934,7 +1612,6 @@ class DynamicProductsPage {
     generateDynamicFilterOptions(field, fieldId, values) {
         // Asegurar que field existe
         if (!field) {
-            console.error('❌ generateDynamicFilterOptions: field es undefined para', fieldId);
             return '';
         }
         
@@ -2000,8 +1677,6 @@ class DynamicProductsPage {
      * Manejar cambios en filtros dinámicos
      */
     handleDynamicFilter(fieldId) {
-        console.log('🔄 Cambio en filtro dinámico:', fieldId);
-        
         // Inicializar el array si no existe
         if (!this.filters.dynamicFilters[fieldId]) {
             this.filters.dynamicFilters[fieldId] = [];
@@ -2011,17 +1686,11 @@ class DynamicProductsPage {
         this.filters.dynamicFilters[fieldId] = [];
         const checkboxes = document.querySelectorAll(`#dynamicOptions_${fieldId} input[type="checkbox"]`);
         
-        console.log(`📋 Checkboxes encontrados para ${fieldId}:`, checkboxes.length);
-        
         checkboxes.forEach(checkbox => {
             if (checkbox.checked) {
                 this.filters.dynamicFilters[fieldId].push(checkbox.value);
-                console.log(`✅ Valor seleccionado en ${fieldId}:`, checkbox.value);
             }
         });
-        
-        console.log(`📊 Valores seleccionados para ${fieldId}:`, this.filters.dynamicFilters[fieldId]);
-        console.log('🎯 Filtros dinámicos completos:', this.filters.dynamicFilters);
         
         this.applyFilters();
     }
@@ -2029,21 +1698,16 @@ class DynamicProductsPage {
     applyFilters() {
         // Verificar que los productos estén cargados
         if (!this.loadedProducts) {
-            console.log('⚠️ Productos no cargados aún en applyFilters(), esperando...');
             // Si los productos aún no están cargados, esperar un momento y reintentar
             setTimeout(() => {
                 if (this.loadedProducts) {
-                    console.log('✅ Productos cargados, reintentando applyFilters()...');
                     this.applyFilters();
-                } else {
-                    console.warn('⚠️ Productos aún no cargados después del delay');
                 }
             }, 200);
             return;
         }
 
         if (this.allProducts.length === 0) {
-            console.log('⚠️ No hay productos disponibles para filtrar');
             this.displayProducts([]);
             return;
         }
@@ -2051,14 +1715,10 @@ class DynamicProductsPage {
         // Verificar que el contenedor existe antes de continuar
         const container = document.getElementById('products-grid');
         if (!container) {
-            console.warn('⚠️ Contenedor #products-grid no encontrado en applyFilters(), esperando...');
             setTimeout(() => {
                 const retryContainer = document.getElementById('products-grid');
                 if (retryContainer) {
-                    console.log('✅ Contenedor encontrado, reintentando applyFilters()...');
                     this.applyFilters();
-                } else {
-                    console.error('❌ Contenedor aún no existe después del delay');
                 }
             }, 200);
             return;
@@ -2150,18 +1810,9 @@ class DynamicProductsPage {
                     const selectedValuesStr = selectedValues.map(v => String(v).trim().toLowerCase());
                     const productValueStr = productValue ? String(productValue).trim().toLowerCase() : null;
                     
-                    console.log(`🔍 Filtro dinámico "${fieldId}": producto ${product.nombre || product.id}`, {
-                        productValue: productValue,
-                        productValueStr: productValueStr,
-                        selectedValues: selectedValues,
-                        selectedValuesStr: selectedValuesStr,
-                        match: productValueStr && selectedValuesStr.includes(productValueStr)
-                    });
-                    
                     // Si hay valores seleccionados, el producto DEBE tener un valor que coincida
                     // Si el producto no tiene valor (null), se excluye
                     if (!productValueStr || !selectedValuesStr.includes(productValueStr)) {
-                        console.log(`   ❌ Producto excluido: ${product.nombre || product.id}`);
                         return false;
                     }
                 }
@@ -2185,41 +1836,29 @@ class DynamicProductsPage {
     }
 
     displayProducts(products) {
-        console.log('🎨 displayProducts() llamado con', products.length, 'productos');
-        
         // Buscar el contenedor de productos
         let productsContainer = document.getElementById('products-grid');
         
         // Si no se encuentra, intentar varias veces
         if (!productsContainer) {
-            console.warn('⚠️ Contenedor #products-grid no encontrado, intentando buscar...');
             productsContainer = document.querySelector('#products-grid');
         }
         
         if (!productsContainer) {
-            console.error('❌ No se encontró el contenedor #products-grid');
-            console.error('🔍 Buscando alternativas...');
-            console.error('📋 Elementos con id "products":', document.getElementById('products'));
-            console.error('📋 Elementos con class "products-grid":', document.querySelectorAll('.products-grid'));
-            
             // Intentar encontrar el contenedor después de un delay
             setTimeout(() => {
                 const retryContainer = document.getElementById('products-grid');
                 if (retryContainer) {
-                    console.log('✅ Contenedor encontrado en reintento');
                     this.displayProducts(products);
                 } else {
-                    console.error('❌ Contenedor #products-grid no existe en el DOM después del reintento');
                     // Intentar crear el contenedor si no existe
                     const mainContent = document.querySelector('.products-content') || document.querySelector('main');
                     if (mainContent) {
-                        console.log('🔧 Creando contenedor #products-grid...');
                         const newContainer = document.createElement('div');
                         newContainer.id = 'products-grid';
                         newContainer.className = 'products-grid';
                         mainContent.appendChild(newContainer);
                         productsContainer = newContainer;
-                        console.log('✅ Contenedor creado');
                     }
                 }
             }, 500);
@@ -2228,9 +1867,6 @@ class DynamicProductsPage {
                 return;
             }
         }
-        
-        console.log('✅ Contenedor encontrado:', productsContainer);
-        console.log('📦 Productos a mostrar:', products.length);
 
         if (products.length === 0) {
             const translations = {
@@ -2239,7 +1875,6 @@ class DynamicProductsPage {
                 en: 'No products found with the applied filters.'
             };
             productsContainer.innerHTML = `<div class="no-products">${translations[this.currentLanguage] || translations.pt}</div>`;
-            console.log('⚠️ No hay productos para mostrar');
             return;
         }
 
@@ -2255,8 +1890,7 @@ class DynamicProductsPage {
             // Configurar navegación de imágenes con flechas
             this.setupImageNavigation();
         } catch (error) {
-            console.error('❌ Error en displayProducts():', error);
-            console.error('Stack trace:', error.stack);
+            // Error en displayProducts
         }
     }
     
@@ -2351,7 +1985,6 @@ class DynamicProductsPage {
         
         // Si es un objeto (como {}), devolver null
         if (typeof imageUrl !== 'string') {
-            console.warn('⚠️ getProductImageUrl recibió un valor que no es string:', typeof imageUrl, imageUrl);
             return null;
         }
         
@@ -2413,14 +2046,6 @@ class DynamicProductsPage {
                 // Si no hay traducción, usar el valor original
                 badgeText = badgeValue;
             }
-            
-            // Debug: verificar qué badge se encontró
-            console.log(`🏷️ Badge encontrado para producto ${product.id}:`, {
-                badge_pt: product.badge_pt,
-                badgeValue: badgeValue,
-                currentLanguage: currentLang,
-                badgeText: badgeText
-            });
         }
         
         // Generar HTML del badge con estilos mejorados para asegurar visibilidad
@@ -2430,7 +2055,7 @@ class DynamicProductsPage {
         const { formattedPrice, tierLabel } = this.getPriceForQuantity(product);
         
         // Obtener campos relevantes según la categoría
-        const relevantFields = this.getRelevantFieldsForCategory(product);
+        const relevantFields = this.getRelevantFieldsForCategorySync(product);
 
         // Traducir botón
         const addButtonText = window.translationSystem ?
@@ -2480,13 +2105,13 @@ class DynamicProductsPage {
                     </div>
                     <div style="margin-top:auto; padding-top:12px;">
                         <div style="font-size:1.2rem;color:var(--brand-gold);font-weight:600;text-align:center;">${formattedPrice}</div>
-                        ${
-                            tierLabel
-                                ? `<div style="margin-top:4px;font-size:0.85rem;color:var(--text-secondary);text-align:center;">Escalón aplicado: ${tierLabel}</div>`
-                                : ''
-                        }
-                        <div style="margin-top:12px;">
-                            <button class="btn btn-primary" style="width:100%;" onclick="event.stopPropagation(); askQuantityAndAddToCart(${productJson})">${addButtonText}</button>
+                    ${
+                        tierLabel
+                            ? `<div style="margin-top:4px;font-size:0.85rem;color:var(--text-secondary);text-align:center;">Escalón aplicado: ${tierLabel}</div>`
+                            : ''
+                    }
+                    <div style="margin-top:12px;">
+                        <button class="btn btn-primary" style="width:100%;" onclick="event.stopPropagation(); askQuantityAndAddToCart(${productJson})">${addButtonText}</button>
                         </div>
                     </div>
                 </div>
@@ -2494,10 +2119,13 @@ class DynamicProductsPage {
         `;
     }
 
-    getRelevantFieldsForCategory(product) {
+    getRelevantFieldsForCategorySync(product) {
         const fields = [];
         const categoria = product.categoria;
         const currentLang = this.currentLanguage || 'pt';
+        
+        // Usar dynamicFilterFields si está disponible
+        const categoryFieldsMap = this.dynamicFilterFields || new Map();
 
         // Marca siempre se muestra
         if (product.brand) {
@@ -2508,16 +2136,11 @@ class DynamicProductsPage {
         // IMPORTANTE: visible_fields se guarda como JSONB con objetos {field_id, label_es, label_pt}
         let visibleFields = product.visible_fields || [];
         
-        console.log('🔍 getRelevantFieldsForCategory - product.visible_fields original:', product.visible_fields);
-        console.log('🔍 getRelevantFieldsForCategory - tipo:', typeof visibleFields);
-        
         // Si visible_fields es un string (JSON parseado), intentar parsearlo
         if (typeof visibleFields === 'string') {
             try {
                 visibleFields = JSON.parse(visibleFields);
-                console.log('✅ visible_fields parseado desde string:', visibleFields);
             } catch (e) {
-                console.warn('⚠️ Error parseando visible_fields:', e);
                 visibleFields = [];
             }
         }
@@ -2529,10 +2152,8 @@ class DynamicProductsPage {
                 if (typeof fieldConfig === 'string' && (fieldConfig.startsWith('{') || fieldConfig.startsWith('"'))) {
                     try {
                         const parsed = JSON.parse(fieldConfig);
-                        console.log(`   ✅ Campo ${idx} parseado desde string JSON:`, parsed);
                         return parsed;
                     } catch (e) {
-                        console.warn(`   ⚠️ Error parseando campo ${idx} como JSON:`, fieldConfig, e);
                         // Si falla el parsing, tratar como field_id simple
                         return { field_id: fieldConfig };
                     }
@@ -2542,14 +2163,9 @@ class DynamicProductsPage {
             });
         }
         
-        console.log('🔍 visibleFields después de parsing completo:', visibleFields);
-        console.log('🔍 currentLang:', currentLang);
-        
         // Si hay campos visibles definidos, usar solo esos
         if (visibleFields && visibleFields.length > 0) {
             visibleFields.forEach((fieldConfig, index) => {
-                console.log(`🔍 Procesando campo visible ${index}:`, fieldConfig, typeof fieldConfig);
-                
                 // fieldConfig puede ser un string (field_id) para compatibilidad o un objeto {field_id, label_es, label_pt}
                 let fieldId, fieldLabel;
                 
@@ -2557,13 +2173,9 @@ class DynamicProductsPage {
                     // Compatibilidad con formato antiguo (solo field_id)
                     fieldId = fieldConfig;
                     fieldLabel = fieldId.charAt(0).toUpperCase() + fieldId.slice(1).replace(/_/g, ' ');
-                    console.log(`   📝 Formato antiguo (string): fieldId=${fieldId}, label=${fieldLabel}`);
                 } else if (typeof fieldConfig === 'object' && fieldConfig !== null) {
                     // Nuevo formato con labels dinámicos guardados en visible_fields
                     fieldId = fieldConfig.field_id || fieldConfig;
-                    
-                    console.log(`   📝 Formato nuevo (objeto): fieldId=${fieldId}`);
-                    console.log(`   📝 Labels disponibles: label_es=${fieldConfig.label_es}, label_pt=${fieldConfig.label_pt}`);
                     
                     // IMPORTANTE: Usar los labels guardados en visible_fields (no buscar en category_fields)
                     if (fieldConfig.label_es || fieldConfig.label_pt) {
@@ -2571,42 +2183,63 @@ class DynamicProductsPage {
                         fieldLabel = currentLang === 'es' 
                             ? (fieldConfig.label_es || fieldConfig.label || fieldId)
                             : (fieldConfig.label_pt || fieldConfig.label || fieldId);
-                        console.log(`   ✅ Label seleccionado (${currentLang}): ${fieldLabel}`);
                     } else {
                         // Fallback si no hay labels guardados
                         fieldLabel = fieldId.charAt(0).toUpperCase() + fieldId.slice(1).replace(/_/g, ' ');
-                        console.log(`   ⚠️ No hay labels guardados, usando fallback: ${fieldLabel}`);
                     }
                 } else {
                     // Formato inválido, saltar
-                    console.warn(`   ❌ Formato inválido, saltando campo:`, fieldConfig);
                     return;
                 }
                 
                 // Buscar el valor del campo en category_fields o en propiedades directas del producto
+                // PRIORIDAD: Primero buscar con sufijo de idioma, luego sin sufijo
                 let fieldValue = null;
+                const fieldIdEs = fieldId + '_es';
+                const fieldIdPt = fieldId + '_pt';
                 
-                // Intentar obtener el valor desde category_fields (JSONB)
-                if (product.category_fields && product.category_fields[fieldId] !== undefined) {
-                    fieldValue = product.category_fields[fieldId];
-                } else if (product[fieldId] !== undefined) {
-                    // Intentar desde propiedades directas del producto
-                    fieldValue = product[fieldId];
-                }
-                
-                // Si no se encuentra, intentar con sufijos de idioma
-                if (fieldValue === null || fieldValue === undefined) {
-                    const fieldIdEs = fieldId + '_es';
-                    const fieldIdPt = fieldId + '_pt';
-                    
-                    if (currentLang === 'es' && product.category_fields && product.category_fields[fieldIdEs] !== undefined) {
+                // PRIORIDAD 1: Buscar valor traducido según el idioma actual
+                if (currentLang === 'es') {
+                    // Buscar versión en español primero
+                    if (product.category_fields && product.category_fields[fieldIdEs] !== undefined) {
                         fieldValue = product.category_fields[fieldIdEs];
-                    } else if (currentLang === 'pt' && product.category_fields && product.category_fields[fieldIdPt] !== undefined) {
-                        fieldValue = product.category_fields[fieldIdPt];
                     } else if (product[fieldIdEs] !== undefined) {
                         fieldValue = product[fieldIdEs];
+                    }
+                } else if (currentLang === 'pt') {
+                    // Buscar versión en portugués primero
+                    if (product.category_fields && product.category_fields[fieldIdPt] !== undefined) {
+                        fieldValue = product.category_fields[fieldIdPt];
                     } else if (product[fieldIdPt] !== undefined) {
                         fieldValue = product[fieldIdPt];
+                    }
+                }
+                
+                // PRIORIDAD 2: Si no se encontró con sufijo, buscar sin sufijo (compatibilidad)
+                if (fieldValue === null || fieldValue === undefined || fieldValue === '') {
+                    if (product.category_fields && product.category_fields[fieldId] !== undefined) {
+                        fieldValue = product.category_fields[fieldId];
+                    } else if (product[fieldId] !== undefined) {
+                        fieldValue = product[fieldId];
+                    }
+                }
+                
+                // PRIORIDAD 3: Si aún no se encontró, intentar con el otro idioma como último recurso
+                if (fieldValue === null || fieldValue === undefined || fieldValue === '') {
+                    if (currentLang === 'es') {
+                        // Si estamos en español y no encontramos, intentar portugués
+                        if (product.category_fields && product.category_fields[fieldIdPt] !== undefined) {
+                            fieldValue = product.category_fields[fieldIdPt];
+                        } else if (product[fieldIdPt] !== undefined) {
+                            fieldValue = product[fieldIdPt];
+                        }
+                    } else if (currentLang === 'pt') {
+                        // Si estamos en portugués y no encontramos, intentar español
+                        if (product.category_fields && product.category_fields[fieldIdEs] !== undefined) {
+                            fieldValue = product.category_fields[fieldIdEs];
+                        } else if (product[fieldIdEs] !== undefined) {
+                            fieldValue = product[fieldIdEs];
+                        }
                     }
                 }
                 
@@ -2614,6 +2247,8 @@ class DynamicProductsPage {
                 if (fieldValue !== null && fieldValue !== undefined && fieldValue !== '') {
                     // Formatear el valor según el tipo de campo
                     let displayValue = fieldValue;
+                    
+                    // Si es un número, formatear según el tipo
                     if (typeof fieldValue === 'number') {
                         // Si es potencia, agregar "W"
                         if (fieldId === 'potencia') {
@@ -2621,13 +2256,36 @@ class DynamicProductsPage {
                         } else if (fieldId === 'garantia') {
                             displayValue = `${fieldValue} años`;
                         }
+                    } else {
+                        // Para campos de tipo select, buscar la traducción del valor
+                        // Buscar en los campos dinámicos cargados para obtener las opciones
+                        const dynamicField = this.dynamicFilterFields?.get(fieldId);
+                        if (dynamicField && dynamicField.options && Array.isArray(dynamicField.options)) {
+                            // Buscar la opción que coincida con el valor
+                            const matchingOption = dynamicField.options.find(opt => {
+                                const optValue = String(opt.value || '').toLowerCase().trim();
+                                const fieldVal = String(fieldValue || '').toLowerCase().trim();
+                                return optValue === fieldVal;
+                            });
+                            
+                            if (matchingOption) {
+                                // Usar el label traducido según el idioma actual
+                                if (currentLang === 'es' && matchingOption.label_es) {
+                                    displayValue = matchingOption.label_es;
+                                } else if (currentLang === 'pt' && matchingOption.label_pt) {
+                                    displayValue = matchingOption.label_pt;
+                                } else if (currentLang === 'en' && matchingOption.label_en) {
+                                    displayValue = matchingOption.label_en;
+                                } else {
+                                    // Fallback: usar label_es o el valor original
+                                    displayValue = matchingOption.label_es || matchingOption.label_pt || fieldValue;
+                                }
+                            }
+                        }
                     }
                     
-                    console.log(`   ✅ Agregando campo a la tarjeta: label="${fieldLabel}", value="${displayValue}"`);
                     // Usar el label dinámico guardado (no hardcodeado)
                     fields.push({ label: fieldLabel, value: displayValue });
-                } else {
-                    console.log(`   ⚠️ No se encontró valor para fieldId=${fieldId}, omitiendo...`);
                 }
             });
         } else {
@@ -2804,8 +2462,6 @@ class DynamicProductsPage {
     }
 
     clearAllFilters() {
-        console.log('🧹 Limpiando todos los filtros...');
-        
         // Guardar el precio máximo actual antes de resetear
         const currentMaxPrice = this.filters.maxPrice || 200;
         
@@ -2858,6 +2514,13 @@ class DynamicProductsPage {
 
     changeLanguage(lang) {
         this.currentLanguage = lang;
+        
+        // Volver a renderizar los productos para mostrar valores traducidos
+        if (this.lastFilteredProducts && this.lastFilteredProducts.length > 0) {
+            this.displayProducts(this.lastFilteredProducts);
+        } else if (this.allProducts && this.allProducts.length > 0) {
+            this.displayProducts(this.allProducts);
+        }
         localStorage.setItem('language', lang);
         
         // Actualizar botones de idioma
@@ -2924,12 +2587,8 @@ class DynamicProductsPage {
         const container = document.getElementById('dynamic-filters-container');
         if (!container) return;
         
-        console.log(`🌐 Actualizando etiquetas de filtros dinámicos a: ${lang}`);
-        console.log(`   📋 Campos guardados: ${this.dynamicFilterFields?.size || 0}`);
-        
         // Verificar que haya campos guardados
         if (!this.dynamicFilterFields || this.dynamicFilterFields.size === 0) {
-            console.warn('⚠️ No hay campos de filtros dinámicos guardados para traducir');
             return;
         }
         
@@ -2942,9 +2601,6 @@ class DynamicProductsPage {
             // Buscar el campo directamente en el Map (fieldId → fieldObj)
             const field = this.dynamicFilterFields.get(fieldId);
             if (field) {
-                console.log(`   🔄 Actualizando campo: ${fieldId}`);
-                console.log(`      📊 Tipo: ${field.type}, tiene opciones: ${field.options ? field.options.length : 'no'}`);
-                
                 // Actualizar título del filtro
                 const titleElement = section.querySelector('.filter-title');
                 if (titleElement) {
@@ -2953,7 +2609,6 @@ class DynamicProductsPage {
                                       lang === 'en' ? (field.label_en || field.label_es) :
                                       field.label_es;
                     titleElement.textContent = fieldLabel || field.id || fieldId;
-                    console.log(`      📝 Título: ${titleElement.textContent}`);
                 }
                 
                 // Buscar todos los labels de checkbox
@@ -2961,8 +2616,6 @@ class DynamicProductsPage {
                 
                 // Si el campo tiene opciones con traducciones, usarlas
                 if (field.options && field.options.length > 0) {
-                    console.log(`      🔄 Actualizando opciones (${field.options.length} opciones)`);
-                    
                     checkboxLabels.forEach(label => {
                         const checkbox = label.querySelector('input[type="checkbox"]');
                         const textSpan = label.querySelector('span:not(.checkmark)');
@@ -2976,16 +2629,12 @@ class DynamicProductsPage {
                                                    lang === 'en' ? (option.label_en || option.label_es || option.value) :
                                                    option.label_es || option.value;
                                 textSpan.textContent = optionLabel;
-                                console.log(`         ✅ ${optionValue} → ${optionLabel}`);
                             }
                         }
                     });
                 } 
                 // Si el campo tiene traducciones directas (para campos no-select)
                 else if (field.translations) {
-                    console.log(`      🔄 Actualizando con traducciones directas`);
-                    console.log(`      📋 Traducciones disponibles:`, Object.keys(field.translations));
-                    
                     checkboxLabels.forEach(label => {
                         const checkbox = label.querySelector('input[type="checkbox"]');
                         const textSpan = label.querySelector('span:not(.checkmark)');
@@ -3003,7 +2652,6 @@ class DynamicProductsPage {
                                 );
                                 if (matchingKey) {
                                     trans = field.translations[matchingKey];
-                                    console.log(`         🔍 Traducción encontrada con clave alternativa: "${matchingKey}"`);
                                 }
                             }
                             
@@ -3013,7 +2661,6 @@ class DynamicProductsPage {
                                                        lang === 'en' ? (trans.en || trans.es || optionValue) :
                                                        trans.es || optionValue;
                                 textSpan.textContent = translatedValue;
-                                console.log(`         ✅ ${optionValue} → ${translatedValue}`);
                             } else {
                                 // Si no se encuentra la traducción, buscar en todas las claves posibles
                                 // El valor del checkbox puede ser el valor en español o portugués
@@ -3035,9 +2682,6 @@ class DynamicProductsPage {
                                                            lang === 'en' ? (trans.en || trans.es || matchingKey) :
                                                            trans.es || matchingKey;
                                     textSpan.textContent = translatedValue;
-                                    console.log(`         ✅ ${optionValue} (clave: ${matchingKey}) → ${translatedValue}`);
-                                } else {
-                                    console.warn(`         ⚠️ No se encontró traducción para: "${optionValue}"`);
                                 }
                             }
                         }
@@ -3045,8 +2689,6 @@ class DynamicProductsPage {
                 }
                 // Si no hay traducciones, intentar con availableValues guardados
                 else if (field.availableValues) {
-                    console.log(`      🔄 Actualizando con availableValues`);
-                    
                     checkboxLabels.forEach(label => {
                         const checkbox = label.querySelector('input[type="checkbox"]');
                         const textSpan = label.querySelector('span:not(.checkmark)');
@@ -3060,13 +2702,10 @@ class DynamicProductsPage {
                                                        lang === 'en' ? (valueObj.label_en || valueObj.label_es || optionValue) :
                                                        valueObj.label_es || optionValue;
                                 textSpan.textContent = translatedValue;
-                                console.log(`         ✅ ${optionValue} → ${translatedValue}`);
                             }
                         }
                     });
                 }
-            } else {
-                console.warn(`   ⚠️ Campo no encontrado: ${fieldId}`);
             }
         });
     }
@@ -3209,17 +2848,13 @@ if (!window.productManagerInitialized) {
     
     function initializeProductManager() {
         if (window.productManager) {
-            console.warn('⚠️ productManager ya existe, no se inicializará de nuevo');
             return;
         }
-        
-        console.log('📄 Inicializando DynamicProductsPage...');
         
         // Ya no necesitamos verificar el contenedor de categorías porque lo eliminamos
         // Verificar solo que el contenedor de productos existe
         const productsContainer = document.getElementById('products-grid');
         if (!productsContainer) {
-            console.warn('⚠️ Contenedor de productos no encontrado, esperando...');
             setTimeout(initializeProductManager, 200);
             return;
         }
@@ -3229,29 +2864,22 @@ if (!window.productManagerInitialized) {
             // Llamar init() manualmente ya que lo removimos del constructor
             if (window.productManager && typeof window.productManager.init === 'function') {
                 window.productManager.init().catch(error => {
-                    console.error('❌ Error en init():', error);
-                    console.error('Stack trace:', error.stack);
+                    // Error en init
                 });
             }
         } catch (error) {
-            console.error('❌ Error inicializando DynamicProductsPage:', error);
-            console.error('Stack trace:', error.stack);
             window.productManagerInitialized = false; // Permitir reintento
         }
     }
     
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 DOM completamente cargado, inicializando DynamicProductsPage...');
             // Usar un pequeño delay para asegurar que todos los scripts estén cargados
             setTimeout(initializeProductManager, 100);
         });
     } else {
         // Si el DOM ya está cargado, inicializar inmediatamente
-        console.log('📄 DOM ya está cargado, inicializando DynamicProductsPage...');
         // Usar un pequeño delay para asegurar que todos los scripts estén cargados
         setTimeout(initializeProductManager, 100);
     }
-} else {
-    console.warn('⚠️ DynamicProductsPage ya se intentó inicializar anteriormente');
 }

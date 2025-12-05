@@ -265,8 +265,8 @@
     </div>
 
     <!-- Modal para Gestionar Categorías del Home (copiado desde admin-productos.html) -->
-    <div id="homeCategoryModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
-        <div class="modal-content" style="background: white; margin: 5% auto; padding: 20px; border-radius: 12px; max-width: 900px; max-height: 90vh; overflow-y: auto;">
+    <div id="homeCategoryModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);" onclick="console.log('🖱️ CLIC EN MODAL - onclick disparado'); handleModalOverlayClickFromSelector(event)">
+        <div class="modal-content" style="background: white; margin: 5% auto; padding: 20px; border-radius: 12px; max-width: 900px; max-height: 90vh; overflow-y: auto;" onclick="console.log('🖱️ CLIC EN CONTENIDO - stopPropagation'); event.stopPropagation();">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="color: #1d3557; margin: 0;">Categorías del Home</h2>
                 <button onclick="closeHomeCategoryManagerFromSelector()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #1d3557;">&times;</button>
@@ -580,8 +580,6 @@
 
         // DEFINIR FUNCIONES GLOBALES INMEDIATAMENTE
         window.openHomeCategoryManagerFromSelector = async function() {
-            console.log('🚀 openHomeCategoryManagerFromSelector() EJECUTADO');
-            
             try {
                 const client = await initSupabase();
                 if (!client) {
@@ -589,16 +587,11 @@
                     return;
                 }
                 
-                console.log('✅ Supabase client obtenido');
-                
                 const modal = document.getElementById('homeCategoryModal');
                 if (!modal) {
-                    console.error('❌ Modal homeCategoryModal no encontrado');
                     alert('❌ Error: No se encontró el modal. Verifica que el HTML esté correcto.');
                     return;
                 }
-                
-                console.log('✅ Modal encontrado, mostrándolo...');
                 
                 // Forzar que el modal sea visible usando múltiples métodos
                 modal.style.display = 'block';
@@ -611,35 +604,16 @@
                 modal.style.width = '100%';
                 modal.style.height = '100%';
                 modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                modal.style.pointerEvents = 'auto'; // Asegurar que los eventos de clic funcionen
                 
                 // Asegurar que el modal esté visible usando classList
                 if (modal.classList) {
                     modal.classList.add('active');
                 }
                 
-                // Verificar que realmente se mostró
-                setTimeout(() => {
-                    const computedStyle = window.getComputedStyle(modal);
-                    console.log('📊 Estilo del modal:', {
-                        display: computedStyle.display,
-                        visibility: computedStyle.visibility,
-                        opacity: computedStyle.opacity,
-                        zIndex: computedStyle.zIndex
-                    });
-                    
-                    if (computedStyle.display === 'none') {
-                        console.error('❌ El modal sigue oculto después de intentar mostrarlo');
-                        alert('⚠️ El modal no se pudo mostrar. Revisa la consola para más detalles.');
-                    } else {
-                        console.log('✅ Modal visible correctamente');
-                    }
-                }, 100);
                 
-                console.log('✅ Modal mostrado, cargando lista de categorías...');
                 await loadHomeCategoryListFromSelector();
-                console.log('✅ Lista de categorías cargada');
             } catch (error) {
-                console.error('❌ Error en openHomeCategoryManagerFromSelector:', error);
                 alert('Error al abrir el gestor de categorías: ' + error.message);
             }
         };
@@ -675,7 +649,6 @@
                 
                 window.location.href = `admin-productos.html?openSubcategoryModal=true&categoryId=${personalizadosCategory.id}`;
             } catch (error) {
-                console.error('Error buscando categoría Personalizados:', error);
                 alert('Error al buscar la categoría Personalizados. Por favor, intenta de nuevo.');
             }
         };
@@ -689,23 +662,24 @@
 
                 if (window.universalSupabase) {
                     supabaseClient = await window.universalSupabase.getClient();
-                } else if (typeof supabase !== 'undefined') {
-                    const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-                    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                        auth: { persistSession: false }
-                    });
+                } else {
+                    // Esperar un momento para que universalSupabase se inicialice
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    if (window.universalSupabase) {
+                        supabaseClient = await window.universalSupabase.getClient();
+                    } else {
+                        throw new Error('Supabase no está disponible. Asegúrate de que supabase-config-universal.js se cargue antes.');
+                    }
                 }
                 
                 if (supabaseClient) {
-                    console.log('✅ Supabase inicializado');
                 } else {
-                    console.error('❌ No se pudo inicializar Supabase');
+                    // No se pudo inicializar
                 }
                 
                 return supabaseClient;
             } catch (error) {
-                console.error('Error al inicializar Supabase:', error);
+                // Error al inicializar
                 alert('Error al inicializar Supabase: ' + error.message);
                 return null;
             }
@@ -716,8 +690,62 @@
             await initSupabase();
         });
 
+        /**
+         * Manejar clic en el overlay del modal (llamado desde el HTML)
+         */
+        window.handleModalOverlayClickFromSelector = function(event) {
+            console.log('🔍 handleModalOverlayClickFromSelector - FUNCIÓN LLAMADA');
+            console.log('🔍 event.target:', event.target);
+            console.log('🔍 event.target.tagName:', event.target.tagName);
+            console.log('🔍 event.target.id:', event.target.id);
+            console.log('🔍 event.target.className:', event.target.className);
+            
+            // Esta función se llama desde el onclick inline del modal
+            const modal = document.getElementById('homeCategoryModal');
+            const modalContent = modal ? modal.querySelector('.modal-content') : null;
+            
+            console.log('🔍 modal existe?', !!modal);
+            console.log('🔍 modalContent existe?', !!modalContent);
+            
+            if (!modal) {
+                console.log('❌ Modal no encontrado');
+                return;
+            }
+            
+            console.log('🔍 event.target === modal?', event.target === modal);
+            console.log('🔍 modal contiene event.target?', modal.contains(event.target));
+            
+            if (modalContent) {
+                console.log('🔍 modalContent contiene event.target?', modalContent.contains(event.target));
+            }
+            
+            // Si el clic es directamente en el modal (overlay) y no dentro del contenido, cerrar
+            // El event.stopPropagation() en el contenido previene que el evento llegue aquí
+            // cuando se hace clic dentro del contenido
+            if (event.target === modal) {
+                console.log('✅ Clic directamente en modal - CERRANDO');
+                event.preventDefault();
+                event.stopPropagation();
+                closeHomeCategoryManagerFromSelector();
+                return;
+            }
+            
+            // Verificación adicional: si el clic no está dentro del contenido, también cerrar
+            if (modalContent && !modalContent.contains(event.target)) {
+                console.log('✅ Clic fuera del contenido - CERRANDO');
+                event.preventDefault();
+                event.stopPropagation();
+                closeHomeCategoryManagerFromSelector();
+            } else {
+                console.log('⚠️ Clic dentro del contenido - NO CERRAR');
+            }
+        }
+
         window.closeHomeCategoryManagerFromSelector = function() {
-            document.getElementById('homeCategoryModal').style.display = 'none';
+            const modal = document.getElementById('homeCategoryModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
             cancelHomeCategoryEditFromSelector();
         }
 
@@ -782,7 +810,6 @@
                 html += '</div>';
                 container.innerHTML = html;
             } catch (error) {
-                console.error('Error cargando categorías del home:', error);
                 container.innerHTML = `<p style="color: #ef4444;">Error al cargar: ${error.message}</p>`;
             }
         }
@@ -819,9 +846,6 @@
                     filtersSection.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; background: #f8fafc; padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #e2e8f0;';
                     filtersSection.style.display = 'block';
                     filtersSection.style.visibility = 'visible';
-                    console.log('✅ Sección de filtros encontrada y forzada a visible en selector-productos');
-                } else {
-                    console.error('❌ NO se encontró categoryFiltersSection en selector-productos');
                 }
                 
                 // Configurar event listener para el select de tipo de campo
@@ -838,8 +862,6 @@
                 }
                 renderCategoryFieldsInForm();
             }, 100);
-            
-            console.log('✅ Formulario de categoría mostrado en selector-productos');
         }
 
         window.editHomeCategoryFromSelector = async function(categoryId) {
@@ -887,11 +909,9 @@
         
         // Función para cargar los filtros guardados de una categoría
         async function loadCategoryFieldsForEdit(categoryId) {
-            console.log('🔄 Cargando filtros para categoría:', categoryId);
-            
             const client = await initSupabase();
             if (!client) {
-                console.error('❌ No se pudo inicializar Supabase');
+                // No se pudo inicializar
                 categoryFieldsInForm = [];
                 renderCategoryFieldsInForm();
                 return;
@@ -905,13 +925,10 @@
                     .order('orden', { ascending: true });
                 
                 if (error) {
-                    console.error('❌ Error cargando filtros:', error);
                     categoryFieldsInForm = [];
                     renderCategoryFieldsInForm();
                     return;
                 }
-                
-                console.log('✅ Filtros cargados desde BD:', fields?.length || 0);
                 
                 if (fields && fields.length > 0) {
                     categoryFieldsInForm = fields.map(field => ({
@@ -927,15 +944,12 @@
                         show_in_filters: field.show_in_filters !== undefined ? field.show_in_filters : true,
                         orden: field.orden || 0
                     }));
-                    console.log('✅ Filtros cargados en categoryFieldsInForm:', categoryFieldsInForm.length);
                 } else {
                     categoryFieldsInForm = [];
-                    console.log('ℹ️ No hay filtros asociados a esta categoría');
                 }
                 
                 renderCategoryFieldsInForm();
             } catch (error) {
-                console.error('❌ Error cargando filtros:', error);
                 categoryFieldsInForm = [];
                 renderCategoryFieldsInForm();
             }
@@ -982,8 +996,6 @@
                 };
                 
                 // Debug: mostrar qué datos se están guardando
-                console.log('💾 Guardando categoría con datos:', categoryData);
-                console.log('📸 URL de foto que se guardará:', foto);
                 
                 if (editingHomeCategoryId) {
                     const { error } = await client
@@ -993,7 +1005,6 @@
                         .eq('tipo', 'home');
                     
                     if (error) throw error;
-                    console.log('✅ Categoría actualizada en Supabase');
                     alert('✅ Categoría del home actualizada correctamente');
                 } else {
                     const { data: newCategory, error } = await client
@@ -1006,12 +1017,10 @@
                     
                     // Asignar el ID de la nueva categoría para poder agregar filtros
                     editingHomeCategoryId = newCategory.id;
-                    console.log('✅ Categoría creada en Supabase con ID:', newCategory.id);
                     alert('✅ Categoría del home creada correctamente. Ahora puedes agregar filtros.');
                     
                     // Cargar los filtros si hay alguno en categoryFieldsInForm
                     if (categoryFieldsInForm && categoryFieldsInForm.length > 0) {
-                        console.log('💾 Guardando filtros de la nueva categoría...');
                         for (const field of categoryFieldsInForm) {
                             if (!field.id) { // Solo guardar si no tiene ID (no está guardado)
                                 const fieldData = {
@@ -1051,7 +1060,6 @@
                 // cancelHomeCategoryEditFromSelector();
                 await loadHomeCategoryListFromSelector();
             } catch (error) {
-                console.error('Error guardando categoría del home:', error);
                 alert('Error al guardar: ' + error.message);
             }
         }
@@ -1082,7 +1090,6 @@
                 alert('✅ Categoría del home eliminada');
                 await loadHomeCategoryListFromSelector();
             } catch (error) {
-                console.error('Error eliminando categoría del home:', error);
                 alert('Error al eliminar: ' + error.message);
             }
         }
@@ -1159,7 +1166,6 @@
         // ============================================
         window.addFieldToCategoryForm = async function() {
             const isEditMode = editingFieldId !== null;
-            console.log(`🚀 addFieldToCategoryForm() EJECUTADO en selector-productos - Modo: ${isEditMode ? 'EDICIÓN' : 'CREACIÓN'}`);
             
             // 1. VALIDAR QUE HAY UNA CATEGORÍA GUARDADA
             if (!editingHomeCategoryId) {
@@ -1260,7 +1266,6 @@
             
             if (categoriaError || !categoriaCheck) {
                 alert(`❌ Error: La categoría no existe en la base de datos.\n\nID: ${editingHomeCategoryId}\n\nGuarda la categoría primero.`);
-                console.error('Error verificando categoría:', categoriaError);
                 return;
             }
             
@@ -1286,7 +1291,6 @@
                 
                 if (isUpdate) {
                     // ACTUALIZAR campo existente (modo edición)
-                    console.log('📤 Actualizando campo existente en Supabase...', editingFieldId);
                     
                     const { data: updateData, error: updateError } = await client
                         .from('category_fields')
@@ -1296,16 +1300,13 @@
                         .single();
                     
                     if (updateError) {
-                        console.error('❌ Error actualizando:', updateError);
                         alert(`❌ Error al actualizar: ${updateError.message}`);
                         return;
                     }
                     
                     data = updateData;
-                    console.log('✅ Campo actualizado con ID:', data.id);
                 } else {
                     // INSERTAR nuevo campo
-                    console.log('📤 Insertando nuevo campo en Supabase...', fieldData);
                     const { data: insertData, error: insertError } = await client
                         .from('category_fields')
                         .insert([fieldData])
@@ -1313,7 +1314,7 @@
                         .single();
                     
                     if (insertError) {
-                        console.error('❌ Error de Supabase:', insertError);
+                        // Error al insertar
                         
                         if (insertError.code === '23505') {
                             alert(`❌ Ya existe un campo con el ID "${fieldId}" para esta categoría.`);
@@ -1332,12 +1333,10 @@
                 
                 // 8. VERIFICAR QUE REALMENTE SE GUARDÓ
                 if (!data || !data.id) {
-                    console.error('❌ No se recibieron datos del servidor');
                     alert('❌ Error: No se recibieron datos del servidor. El campo NO se guardó.');
                     return;
                 }
                 
-                console.log(`✅ Campo ${isUpdate ? 'actualizado' : 'guardado'} con ID:`, data.id);
                 
                 // 9. VERIFICAR QUE EL REGISTRO EXISTE
                 const { data: verifyData, error: verifyError } = await client
@@ -1347,12 +1346,10 @@
                     .single();
                 
                 if (verifyError || !verifyData) {
-                    console.error('❌ Error verificando:', verifyError);
                     alert('⚠️ El campo se guardó pero no se pudo verificar. Revisa la base de datos manualmente.');
                     return;
                 }
                 
-                console.log('✅ Verificación exitosa:', verifyData);
                 
                 // 10. AGREGAR O ACTUALIZAR EN EL ARRAY LOCAL
                 if (isUpdate) {
@@ -1416,7 +1413,6 @@
                 alert(`✅ Campo "${labelEs}" ${isUpdate ? 'actualizado' : 'guardado'} y verificado correctamente en Supabase.\n\nID: ${data.id}`);
                 
             } catch (error) {
-                console.error('❌ Error inesperado:', error);
                 alert(`❌ Error inesperado: ${error.message}\n\nEl campo NO se guardó.`);
             }
         }
@@ -1482,7 +1478,6 @@
             const field = categoryFieldsInForm[index];
             if (!field) return;
             
-            console.log('✏️ Editando filtro:', field);
             
             // Guardar el ID del filtro que se está editando
             editingFieldId = field.id || null;
@@ -1621,13 +1616,11 @@
                             .eq('id', field.id);
                         
                         if (error) {
-                            console.error('Error eliminando filtro de Supabase:', error);
+                            // Error eliminando filtro
                             alert(`Error al eliminar el filtro de la base de datos: ${error.message}`);
                             return;
                         }
-                        console.log('✅ Filtro eliminado de Supabase');
                     } catch (error) {
-                        console.error('Error inesperado:', error);
                         alert(`Error inesperado: ${error.message}`);
                         return;
                     }
@@ -1842,7 +1835,6 @@
                 modal.style.zIndex = '10000';
                 document.body.style.overflow = 'hidden';
             } else {
-                console.error('❌ Modal productActionModal no encontrado');
             }
         };
         

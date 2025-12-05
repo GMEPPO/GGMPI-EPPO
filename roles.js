@@ -70,19 +70,11 @@ class RolesManager {
         }
 
         try {
-            // Obtener cliente Supabase
+            // Obtener cliente Supabase - usar siempre el cliente compartido
             if (window.universalSupabase) {
                 this.supabase = await window.universalSupabase.getClient();
-            } else if (typeof supabase !== 'undefined') {
-                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
-                this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                    auth: {
-                        persistSession: true
-                    }
-                });
             } else {
-                throw new Error('Supabase no está disponible');
+                throw new Error('Supabase no está disponible. Asegúrate de que supabase-config-universal.js se cargue antes.');
             }
 
             // Cargar rol del usuario actual
@@ -91,7 +83,6 @@ class RolesManager {
             this.isInitialized = true;
             return this.supabase;
         } catch (error) {
-            console.error('Error inicializando RolesManager:', error);
             throw error;
         }
     }
@@ -125,7 +116,6 @@ class RolesManager {
                 .single();
 
             if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-                console.error('Error cargando rol:', error);
                 // Si no hay rol asignado, asignar 'viewer' por defecto
                 this.currentUserRole = 'viewer';
                 return 'viewer';
@@ -134,7 +124,6 @@ class RolesManager {
             this.currentUserRole = data?.role || 'viewer';
             return this.currentUserRole;
         } catch (error) {
-            console.error('Error en loadCurrentUserRole:', error);
             this.currentUserRole = 'viewer'; // Rol por defecto
             return 'viewer';
         }
@@ -260,7 +249,6 @@ class RolesManager {
                 success: true
             };
         } catch (error) {
-            console.error('Error asignando rol:', error);
             return {
                 success: false,
                 error: error.message
@@ -286,7 +274,6 @@ class RolesManager {
 
             return data?.role || 'viewer';
         } catch (error) {
-            console.error('Error obteniendo rol de usuario:', error);
             return 'viewer';
         }
     }
@@ -321,4 +308,5 @@ if (typeof window.rolesManager === 'undefined') {
         window.rolesManager.initialize();
     }
 }
+
 

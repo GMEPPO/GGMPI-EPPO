@@ -13,18 +13,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-warm, #F6F4F0);
             padding: 20px;
         }
 
         .login-box {
-            background: var(--bg-secondary, #1e293b);
-            border-radius: 16px;
+            background: #fff;
+            border-radius: var(--radius, 14px);
             padding: 40px;
             width: 100%;
             max-width: 400px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--border-color, #334155);
+            box-shadow: var(--shadow-lg, 0 10px 26px rgba(13,42,60,.18));
+            border: 1px solid #E8EBEF;
         }
 
         .login-header {
@@ -33,13 +33,14 @@
         }
 
         .login-header h1 {
-            color: var(--text-primary, #f1f5f9);
+            color: var(--brand-blue, #0D2A3C);
             font-size: 2rem;
             margin-bottom: 8px;
+            font-family: var(--font-display, 'Playfair Display', serif);
         }
 
         .login-header p {
-            color: var(--text-secondary, #94a3b8);
+            color: var(--text-muted, #5E6B76);
             font-size: 0.9rem;
         }
 
@@ -49,7 +50,7 @@
 
         .form-group label {
             display: block;
-            color: var(--text-primary, #f1f5f9);
+            color: var(--text, #151719);
             margin-bottom: 8px;
             font-weight: 500;
             font-size: 0.9rem;
@@ -58,41 +59,47 @@
         .form-group input {
             width: 100%;
             padding: 12px 16px;
-            background: var(--bg-primary, #0f172a);
-            border: 1px solid var(--border-color, #334155);
+            background: var(--bg-white, #ffffff);
+            border: 1px solid #E8EBEF;
             border-radius: 8px;
-            color: var(--text-primary, #f1f5f9);
+            color: var(--text, #151719);
             font-size: 1rem;
             transition: all 0.2s;
         }
 
+        .form-group input[type="password"] {
+            color: var(--text, #151719);
+            -webkit-text-fill-color: var(--text, #151719);
+        }
+
         .form-group input:focus {
             outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            border-color: var(--brand-blue, #0D2A3C);
+            box-shadow: 0 0 0 3px rgba(13, 42, 60, 0.1);
         }
 
         .form-group input::placeholder {
-            color: var(--text-secondary, #64748b);
+            color: var(--text-muted, #5E6B76);
         }
 
         .btn-login {
             width: 100%;
             padding: 14px;
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            background: var(--brand-blue, #0D2A3C);
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
             margin-top: 10px;
         }
 
         .btn-login:hover {
+            background: #113B55;
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .btn-login:disabled {
@@ -135,11 +142,11 @@
             text-align: center;
             margin-top: 20px;
             padding-top: 20px;
-            border-top: 1px solid var(--border-color, #334155);
+            border-top: 1px solid #E8EBEF;
         }
 
         .login-footer a {
-            color: #3b82f6;
+            color: var(--brand-blue, #0D2A3C);
             text-decoration: none;
             font-size: 0.9rem;
         }
@@ -212,25 +219,97 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="supabase-config-universal.js"></script>
-    <script src="auth.js"></script>
+    <!-- Scripts - Cargar de forma secuencial para asegurar el orden correcto -->
+    <script>
+        // Cargar scripts de forma secuencial
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        async function loadAllScripts() {
+            try {
+                // 1. Cargar Supabase primero
+                await loadScript('https://unpkg.com/@supabase/supabase-js@2');
+                
+                // 2. Cargar configuración de Supabase
+                await loadScript('supabase-config-universal.js');
+                
+                // 3. Cargar auth.js
+                await loadScript('auth.js');
+                
+                // 4. Inicializar login
+                initializeLogin();
+            } catch (error) {
+                const errorMsg = document.getElementById('errorMessage');
+                if (errorMsg) {
+                    errorMsg.textContent = 'Error al cargar las dependencias. Por favor, recarga la página.';
+                    errorMsg.classList.add('show');
+                }
+            }
+        }
+
+        // Iniciar carga cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadAllScripts);
+        } else {
+            loadAllScripts();
+        }
+    </script>
     <script>
         let isSubmitting = false;
 
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Verificar si ya está autenticado
-            const isAuth = await window.authManager.isAuthenticated();
-            if (isAuth) {
-                window.location.href = 'index.html';
+        // Inicializar login después de que todos los scripts estén cargados
+        async function initializeLogin() {
+            // Esperar un momento para asegurar que todo esté inicializado
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Verificar que todas las dependencias estén disponibles
+            if (typeof supabase === 'undefined' || 
+                typeof window.universalSupabase === 'undefined' || 
+                typeof window.authManager === 'undefined') {
+                const errorMsg = document.getElementById('errorMessage');
+                if (errorMsg) {
+                    errorMsg.textContent = 'Error al cargar las dependencias. Por favor, recarga la página.';
+                    errorMsg.classList.add('show');
+                }
                 return;
+            }
+            
+            // Inicializar authManager
+            try {
+                await window.authManager.initialize();
+            } catch (error) {
+                // Si hay error en la inicialización, mostrar mensaje pero continuar
+                const errorMsg = document.getElementById('errorMessage');
+                if (errorMsg) {
+                    errorMsg.textContent = 'Error al inicializar la autenticación. Por favor, recarga la página.';
+                    errorMsg.classList.add('show');
+                }
+            }
+            
+            // Verificar si ya está autenticado
+            try {
+                const isAuth = await window.authManager.isAuthenticated();
+                if (isAuth) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+            } catch (error) {
+                // Si hay error, continuar con el login normal
             }
 
             // Configurar formulario
-            document.getElementById('loginForm').addEventListener('submit', handleLogin);
-        });
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+        }
 
         // Manejar login
         async function handleLogin(e) {
