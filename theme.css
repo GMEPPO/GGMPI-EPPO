@@ -54,8 +54,16 @@ h2{ font-size:clamp(28px,3vw,36px); line-height:1.2 }
   text-decoration:none; cursor:pointer; border:1px solid transparent;
   min-height:44px;
 }
-.btn-primary{ background:var(--brand-blue); color:#fff }
-.btn-primary:hover{ background:#113B55 }
+.btn-primary{ background:var(--brand-blue); color:#fff; transition: all 0.3s ease; cursor: pointer; }
+.btn-primary:hover{ 
+  background:#113B55; 
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.btn-primary:active{ 
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 .btn-secondary{
   background:#fff; color:var(--brand-blue); border-color:var(--brand-blue)
 }
@@ -120,5 +128,15 @@ input[type="range"]::-webkit-slider-thumb{ background:var(--brand-gold); border-
   .nav { gap: 16px }
   .container { padding: 0 16px }
 }
+
+
+
+
+
+
+
+
+
+
 
 

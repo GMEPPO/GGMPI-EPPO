@@ -121,3 +121,4 @@ Después de crear el bucket y configurar las políticas:
 *   Verifica que la URL pública es correcta (debe incluir `/storage/v1/object/public/product-images/`).
 *   Revisa la consola del navegador para errores de CORS o de carga de imágenes.
 
+

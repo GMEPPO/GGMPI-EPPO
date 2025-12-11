@@ -10,78 +10,106 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="menu-hamburguesa.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="supabase-config-universal.js"></script>
     <script src="translation-system.js"></script>
+    <script src="auth.js"></script>
+    <script src="stock-warning.js"></script>
     <style>
-        /* Hero Section para Categorías */
+        /* Hero Section para Categorías - más compacto */
         .comparison-hero {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 80px 0;
+            padding: 50px 0;
             text-align: center;
-            margin-bottom: 60px;
+            margin-bottom: 30px;
         }
         
         .comparison-hero h1 {
-            font-size: 3.5rem;
+            font-size: 2.8rem;
             font-weight: 700;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         
         .comparison-hero p {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             opacity: 0.9;
-            margin-bottom: 40px;
+            margin-bottom: 0;
         }
 
-        /* Mejorar las tarjetas de categorías */
+        /* Mejorar las tarjetas de categorías - formato cuadrado y compacto */
         .category-card {
             position: relative;
             overflow: hidden;
-            border-radius: 14px;
+            border-radius: 16px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 6px 18px rgba(13,42,60,.12);
+            box-shadow: 0 4px 12px rgba(13,42,60,.15);
+            aspect-ratio: 1 / 1; /* Formato cuadrado */
+            display: block;
         }
 
         .category-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 26px rgba(13,42,60,.18);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 28px rgba(13,42,60,.22);
         }
 
         .category-card img {
             width: 100%;
-            height: 220px;
+            height: 100%;
             object-fit: cover;
             display: block;
-            transition: transform 0.3s ease;
+            transition: transform 0.4s ease;
         }
 
         .category-card:hover img {
-            transform: scale(1.05);
+            transform: scale(1.08);
         }
 
         .category-card .overlay {
             position: absolute;
-            inset: auto 0 0;
-            padding: 20px;
+            inset: 0;
+            display: flex;
+            align-items: flex-end;
+            padding: 16px;
             color: #fff;
-            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.6) 100%);
+            background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.7) 100%);
         }
 
         .category-card .title {
             font-family: "Playfair Display", serif;
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: 600;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+            letter-spacing: 0.02em;
         }
 
-        /* Grid de categorías mejorado */
+        /* Grid de categorías - máximo 4 por fila */
         .categories-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 28px;
+            margin-top: 30px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 20px;
+        }
+
+        /* Limitar a 4 columnas máximo en pantallas grandes */
+        @media (min-width: 1100px) {
+            .categories-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* 3 columnas en tablets grandes */
+        @media (max-width: 1099px) and (min-width: 769px) {
+            .categories-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
 
         @media (max-width: 768px) {
@@ -90,8 +118,28 @@
             }
             
             .categories-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                max-width: 100%;
+            }
+            
+            .category-card .title {
+                font-size: 0.95rem;
+            }
+        }
+        
+        @media (max-width: 500px) {
+            .categories-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .category-card .title {
+                font-size: 0.9rem;
+            }
+            
+            .category-card .overlay {
+                padding: 12px;
             }
         }
     </style>
@@ -106,8 +154,29 @@
             <nav class="nav">
                 <a href="index.html" class="nav-link">Home</a>
                 <a href="productos-dinamico.html" class="nav-link">Products</a>
-                <a href="comparar-productos.html" class="nav-link">Comparar</a>
-                <a href="carrito-compras.html" class="nav-link">Carrito</a>
+                <a href="carrito-compras.html" class="nav-link" id="nav-cart-link">Presupuesto</a>
+                
+                <!-- Menú hamburguesa -->
+                <div class="menu-dropdown">
+                    <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Toggle menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <a href="comparar-productos.html" class="dropdown-link">
+                            <i class="fas fa-balance-scale"></i>
+                            <span>Comparar</span>
+                        </a>
+                        <a href="consultar-propuestas.html" class="dropdown-link" id="nav-proposals-link">
+                            <i class="fas fa-file-invoice"></i>
+                            <span>Histórico</span>
+                        </a>
+                        <a href="selector-productos.html" class="dropdown-link" id="nav-create-product-link">
+                            <i class="fas fa-edit"></i>
+                            <span id="create-product-text">Creador/Editor</span>
+                        </a>
+                    </div>
+                </div>
+                
                 <div class="language-selector">
                     <button class="flag-btn active" data-lang="pt" title="Português" onclick="changeLanguage('pt')">
                         <img src="https://flagcdn.com/w20/pt.png" alt="Portugal">
@@ -138,27 +207,11 @@
     <!-- Main Content -->
     <main class="main-content">
         <section class="container" style="padding:32px 0">
-            <div class="categories-grid">
-                <a class="category-card" href="productos-dinamico.html">
-                    <img src="secador.png" alt="Secadores">
-                    <div class="overlay">
-                        <div class="title">Secadores</div>
-                    </div>
-                </a>
-
-                <a class="category-card" href="productos-dinamico.html">
-                    <img src="Ironing.png" alt="Planchado">
-                    <div class="overlay">
-                        <div class="title">Planchado</div>
-                    </div>
-                </a>
-
-                <a class="category-card" href="productos-dinamico.html">
-                    <img src="PORTA MALAS.png" alt="Portamaletas">
-                    <div class="overlay">
-                        <div class="title">Portamaletas</div>
-                    </div>
-                </a>
+            <div class="categories-grid" id="categoriesGrid">
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Cargando categorías...</p>
+                </div>
             </div>
         </section>
     </main>
@@ -221,6 +274,9 @@
             
             // Actualizar contenido según el idioma
             updatePageContent(lang);
+            
+            // Actualizar botones de navegación
+            updateNavigationButtons(lang);
         }
 
         // Función para actualizar el contenido de la página según el idioma
@@ -265,14 +321,245 @@
                 categoryTitles[1].textContent = t.planchado;
                 categoryTitles[2].textContent = t.portamaletas;
             }
+            
+            // Actualizar botones de navegación
+            updateNavigationButtons(lang);
+        }
+        
+        // Función para actualizar botones de navegación
+        function updateNavigationButtons(lang) {
+            const navTranslations = {
+                pt: {
+                    budget: 'Orçamento',
+                    history: 'Histórico',
+                    createProduct: 'Criador/Editor'
+                },
+                es: {
+                    budget: 'Presupuesto',
+                    history: 'Histórico',
+                    createProduct: 'Creador/Editor'
+                },
+                en: {
+                    budget: 'Budget',
+                    history: 'History',
+                    createProduct: 'Creator/Editor'
+                }
+            };
+            
+            const t = navTranslations[lang] || navTranslations.pt;
+            
+            const cartLink = document.getElementById('nav-cart-link');
+            const proposalsLink = document.getElementById('nav-proposals-link');
+            const createProductLink = document.getElementById('create-product-text');
+            
+            if (cartLink) cartLink.textContent = t.budget;
+            if (proposalsLink) {
+                const span = proposalsLink.querySelector('span');
+                if (span) span.textContent = t.history;
+            }
+            if (createProductLink) createProductLink.textContent = t.createProduct;
         }
 
-        // Inicializar idioma al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
+        // Variables globales
+        let supabaseClient = null;
+        let homeCategories = [];
+
+        // Inicializar Supabase - usar siempre el cliente compartido
+        async function initSupabase() {
+            try {
+                if (supabaseClient) {
+                    return supabaseClient;
+                }
+
+                if (window.universalSupabase) {
+                    supabaseClient = await window.universalSupabase.getClient();
+                } else {
+                    // Esperar un momento para que universalSupabase se inicialice
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    if (window.universalSupabase) {
+                        supabaseClient = await window.universalSupabase.getClient();
+                    }
+                }
+                
+                return supabaseClient;
+            } catch (error) {
+                // Error al inicializar
+                return null;
+            }
+        }
+
+        // Cargar categorías del home desde Supabase
+        async function loadHomeCategories() {
+            const grid = document.getElementById('categoriesGrid');
+            if (!grid) return;
+
+            // Mostrar indicador de carga
+            grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);"><i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i><p>Cargando categorías...</p></div>';
+
+            const client = await initSupabase();
+            if (!client) {
+                grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-danger);"><p>Error al cargar las categorías</p></div>';
+                return;
+            }
+
+            try {
+                // Cargar solo categorías activas, ordenadas por orden
+                const { data, error } = await client
+                    .from('categorias_geral')
+                    .select('*')
+                    .eq('tipo', 'home')
+                    .eq('is_active', true)
+                    .order('orden', { ascending: true });
+
+                if (error) throw error;
+
+                homeCategories = data || [];
+
+                // Categorías cargadas
+                homeCategories.forEach(cat => {
+                    console.log(`  - ${cat.nombre_es}: foto = "${cat.foto}"`);
+                });
+
+                if (homeCategories.length === 0) {
+                    grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);"><p>No hay categorías disponibles</p></div>';
+                    return;
+                }
+
+                // Renderizar categorías
+                renderHomeCategories();
+            } catch (error) {
+                console.error('Error cargando categorías del home:', error);
+                grid.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-danger);"><p>Error al cargar las categorías: ' + error.message + '</p></div>';
+            }
+        }
+
+        // Renderizar categorías en el grid
+        function renderHomeCategories() {
+            const grid = document.getElementById('categoriesGrid');
+            if (!grid) return;
+
+            const currentLang = localStorage.getItem('language') || 'pt';
+
+            let html = '';
+            homeCategories.forEach(category => {
+                // Obtener nombre según idioma
+                const nombre = currentLang === 'es' ? category.nombre_es : 
+                              currentLang === 'pt' ? category.nombre_pt : 
+                              category.nombre_es; // Fallback a español
+
+                // URL de destino con parámetro de categoría para filtrar automáticamente
+                const categorySlug = category.nombre_es.toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/\s+/g, '-')
+                    .replace(/[^a-z0-9-]/g, '');
+                const href = `productos-dinamico.html?category=${categorySlug}`;
+
+                // Debug: mostrar en consola qué foto se está usando
+                console.log('Categoría:', category.nombre_es, 'Foto en BD:', category.foto);
+
+                // Validar que la foto existe y no está vacía
+                const fotoUrl = category.foto && category.foto.trim() ? category.foto.trim() : null;
+
+                html += `
+                    <a class="category-card" href="${href}" data-category-id="${category.id}" data-category-name="${category.nombre_es}" data-foto-url="${fotoUrl || ''}">
+                        ${fotoUrl ? 
+                            `<img src="${fotoUrl}" alt="${nombre}" 
+                                onerror="console.error('❌ Error cargando imagen para categoría ${category.nombre_es}:', '${fotoUrl}'); this.style.display='none';" 
+                                onload="console.log('✅ Imagen cargada correctamente para ${category.nombre_es}:', '${fotoUrl}');"
+                                loading="lazy"
+                                data-foto-original="${fotoUrl}">` :
+                            `<div style="width: 100%; height: 100%; background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%); display: flex; align-items: center; justify-content: center; color: #9ca3af;">
+                                <i class="fas fa-image" style="font-size: 2.5rem;"></i>
+                            </div>`
+                        }
+                        <div class="overlay">
+                            <div class="title">${nombre}</div>
+                        </div>
+                    </a>
+                `;
+            });
+
+            grid.innerHTML = html || '<div style="text-align: center; padding: 40px; color: var(--text-secondary);"><p>No hay categorías disponibles</p></div>';
+            
+            // Agregar event listeners para depuración al hacer clic en las categorías
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    const categoryId = this.getAttribute('data-category-id');
+                    const categoryName = this.getAttribute('data-category-name');
+                    const fotoUrl = this.getAttribute('data-foto-url');
+                    const img = this.querySelector('img');
+                    const imgSrc = img ? img.src : 'No hay imagen';
+                    const imgDataOriginal = img ? img.getAttribute('data-foto-original') : 'No hay imagen';
+                    
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('🖼️ INFORMACIÓN DE LA CATEGORÍA CLICKEADA:');
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                    console.log('📝 Nombre:', categoryName);
+                    console.log('🆔 ID:', categoryId);
+                    console.log('💾 Foto en Base de Datos (data-foto-url):', fotoUrl);
+                    console.log('🖼️ Foto Original (data-foto-original):', imgDataOriginal);
+                    console.log('🌐 URL Actual de la Imagen (img.src):', imgSrc);
+                    console.log('🔍 ¿Coinciden?', fotoUrl === imgSrc || imgDataOriginal === imgSrc ? '✅ SÍ' : '❌ NO');
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                });
+            });
+        }
+
+        // Actualizar categorías cuando cambia el idioma
+        function updatePageContent(lang) {
+            const translations = {
+                pt: {
+                    title: 'Categorias',
+                    subtitle: 'Descubra nossa ampla gama de produtos para hotéis'
+                },
+                es: {
+                    title: 'Categorías',
+                    subtitle: 'Descubre nuestra amplia gama de productos para hoteles'
+                },
+                en: {
+                    title: 'Categories',
+                    subtitle: 'Discover our wide range of products for hotels'
+                }
+            };
+
+            const t = translations[lang] || translations.pt;
+            
+            // Actualizar título y subtítulo
+            const titleElement = document.querySelector('.comparison-hero h1');
+            const subtitleElement = document.querySelector('.comparison-hero p');
+            
+            if (titleElement) titleElement.textContent = t.title;
+            if (subtitleElement) subtitleElement.textContent = t.subtitle;
+            
+            // Re-renderizar categorías con el nuevo idioma
+            if (homeCategories.length > 0) {
+                renderHomeCategories();
+            }
+            
+            // Actualizar botones de navegación
+            updateNavigationButtons(lang);
+        }
+
+        // Inicializar idioma y cargar categorías al cargar la página
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Verificar autenticación primero
+            const isAuth = await window.authManager.requireAuth('login.html');
+            if (!isAuth) {
+                return; // Redirige a login.html
+            }
+
             const savedLanguage = localStorage.getItem('language') || 'pt';
             changeLanguage(savedLanguage);
+            // Asegurar que los botones de navegación se traduzcan
+            updateNavigationButtons(savedLanguage);
+            
+            // Inicializar Supabase y cargar categorías del home
+            await initSupabase();
+            await loadHomeCategories();
         });
     </script>
-
+    <script src="menu-hamburguesa.js"></script>
+    <script src="theme-common.js"></script>
 </body>
 </html>

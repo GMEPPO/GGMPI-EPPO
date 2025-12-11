@@ -312,3 +312,4 @@ Este documento analiza el sistema actual de creación de categorías y filtros, 
 
 *Documento generado el: $(Get-Date -Format "yyyy-MM-dd")*
 
+

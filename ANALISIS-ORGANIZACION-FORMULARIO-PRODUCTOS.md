@@ -311,3 +311,4 @@ Mover "Zonas del Producto" a:
 **Fecha de Análisis:** 2025-01-05
 **Archivo Analizado:** `admin-productos.html` (líneas 496-776)
 
+

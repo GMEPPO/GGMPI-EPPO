@@ -302,3 +302,4 @@ Para cualquier duda sobre la estructura de datos o campos disponibles, consultar
 - Documentación de campos en los scripts SQL
 
 
+

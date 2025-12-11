@@ -113,7 +113,13 @@ class TranslationSystem {
                 agregar_comparacion: { pt: 'Adicionar à comparação', es: 'Agregar a comparación', en: 'Add to comparison' },
                 quitar_comparacion: { pt: 'Remover da comparação', es: 'Quitar de comparación', en: 'Remove from comparison' },
                 sin_productos: { pt: 'Nenhum produto encontrado', es: 'No se encontraron productos', en: 'No products found' },
-                cargando: { pt: 'Carregando...', es: 'Cargando...', en: 'Loading...' }
+                cargando: { pt: 'Carregando...', es: 'Cargando...', en: 'Loading...' },
+                agregar: { pt: 'Adicionar', es: 'Agregar', en: 'Add' },
+                // Traducciones de ordenamiento
+                sortDefault: { pt: 'Predefinido', es: 'Predeterminado', en: 'Default' },
+                sortPriceAsc: { pt: 'Preço: menor a maior', es: 'Precio: menor a mayor', en: 'Price: low to high' },
+                sortPriceDesc: { pt: 'Preço: maior a menor', es: 'Precio: mayor a menor', en: 'Price: high to low' },
+                sortCategory: { pt: 'Categoria', es: 'Categoría', en: 'Category' }
             }
         };
     }
@@ -279,4 +285,14 @@ document.addEventListener('DOMContentLoaded', function() {
         activeButton.classList.add('active');
     }
 });
+
+
+
+
+
+
+
+
+
+
 
