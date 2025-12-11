@@ -10,14 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="menu-hamburguesa.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="supabase-config-universal.js"></script>
     <script src="translation-system.js"></script>
-    <script src="auth.js"></script>
     <script src="carrito-compras.js"></script>
-    <script src="stock-warning.js"></script>
     <style>
         .product-detail-container {
             max-width: 1200px;
@@ -424,7 +419,6 @@
             color: var(--accent-500);
             font-weight: bold;
             margin-bottom: var(--space-6);
-            text-align: center;
         }
         
         .product-description {
@@ -808,7 +802,6 @@
             
             .product-price {
                 font-size: 1.5rem;
-                text-align: center;
             }
             
             .specs-grid {
@@ -854,7 +847,6 @@
             
             .product-price {
                 font-size: 1.3rem;
-                text-align: center;
             }
         }
     </style>
@@ -869,32 +861,8 @@
             <nav class="nav">
                 <a href="index.html" class="nav-link">Home</a>
                 <a href="productos-dinamico.html" class="nav-link">Products</a>
-                
-                <!-- Menú hamburguesa -->
-                <div class="menu-dropdown">
-                    <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Toggle menu">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="dropdown-menu" id="dropdownMenu">
-                        <a href="comparar-productos.html" class="dropdown-link">
-                            <i class="fas fa-balance-scale"></i>
-                            <span>Comparar</span>
-                        </a>
-                        <a href="carrito-compras.html" class="dropdown-link" id="nav-cart-link">
-                            <i class="fas fa-shopping-cart"></i>
-                            <span>Presupuesto</span>
-                        </a>
-                        <a href="consultar-propuestas.html" class="dropdown-link" id="nav-proposals-link">
-                            <i class="fas fa-file-invoice"></i>
-                            <span>Propuestas</span>
-                        </a>
-                        <a href="selector-productos.html" class="dropdown-link" id="nav-create-product-link">
-                            <i class="fas fa-edit"></i>
-                            <span id="create-product-text">Creador/Editor</span>
-                        </a>
-                    </div>
-                </div>
-                
+                <a href="comparar-productos.html" class="nav-link">Comparar</a>
+                <a href="carrito-compras.html" class="nav-link">Carrito</a>
                 <div class="language-selector">
                     <button class="flag-btn active" data-lang="pt" title="Português" onclick="changeLanguage('pt')">
                         <img src="https://flagcdn.com/w20/pt.png" alt="Portugal">
@@ -950,18 +918,19 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         class ProductDetailPage {
             constructor() {
-                this.currentLanguage = localStorage.getItem('language') || 'pt';
+                this.currentLanguage = 'pt';
                 this.productId = null;
                 this.supabase = null;
-                this.product = null;
                 this.init();
             }
 
             async init() {
                 try {
+                    // Obtener ID del producto desde la URL
                     this.productId = this.getProductIdFromURL();
                     if (!this.productId) {
                         this.showError('ID de producto no válido');
@@ -972,6 +941,7 @@
                     await this.loadProductDetails();
                     this.setupLanguageSelector();
                 } catch (error) {
+                    console.error('Error inicializando página:', error);
                     this.showError('Error al cargar la página');
                 }
             }
@@ -982,157 +952,230 @@
             }
 
             async initializeSupabase() {
-                try {
-                    // Esperar a que universalSupabase esté disponible
-                    let attempts = 0;
-                    const maxAttempts = 10;
-                    while (!window.universalSupabase && attempts < maxAttempts) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-                    }
-
-                    if (window.universalSupabase) {
-                        this.supabase = await window.universalSupabase.getClient();
-                        if (this.supabase) {
-                            return;
-                        }
-                    }
-
-                    // Esperar un momento para que universalSupabase se inicialice
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    if (window.universalSupabase) {
-                        this.supabase = await window.universalSupabase.getClient();
-                    } else {
-                        throw new Error('Supabase no está disponible. Asegúrate de que supabase-config-universal.js se cargue antes.');
-                    }
-                } catch (error) {
-                    // No se pudo inicializar
-                    throw error;
+                // Cargar Supabase desde CDN si no está disponible
+                if (typeof supabase === 'undefined') {
+                    await this.loadSupabaseFromCDN();
                 }
+                
+                // Configuración de Supabase
+                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
+                
+                this.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+
+            async loadSupabaseFromCDN() {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
             }
 
             async loadProductDetails() {
                 try {
-                    const { data, error } = await this.supabase
-                        .from('products')
+                    console.log('🔄 Cargando detalles del producto ID:', this.productId);
+                    console.log('📊 Cliente Supabase:', this.supabase);
+                    
+                    // Intentar cargar desde secadores primero
+                    let { data, error } = await this.supabase
+                        .from('secadores')
                         .select('*')
                         .eq('id', this.productId)
                         .single();
 
+                    // Si no se encuentra en secadores, intentar en otras tablas
                     if (error || !data) {
-                        throw new Error(error?.message || 'Producto no encontrado');
+                        console.log('No encontrado en secadores, intentando en ironing...');
+                        const { data: ironingData, error: ironingError } = await this.supabase
+                            .from('ironing')
+                            .select('*')
+                            .eq('id', this.productId)
+                            .single();
+                        
+                        if (!ironingError && ironingData) {
+                            data = ironingData;
+                            error = null;
+                        } else {
+                            console.log('No encontrado en ironing, intentando en porta_malas...');
+                            const { data: portaData, error: portaError } = await this.supabase
+                                .from('porta_malas')
+                                .select('*')
+                                .eq('id', this.productId)
+                                .single();
+                            
+                            if (!portaError && portaData) {
+                                data = portaData;
+                                error = null;
+                            }
+                        }
                     }
 
-                    this.product = this.normalizeProduct(data);
-                    this.displayProductDetails();
+                    if (error) {
+                        throw new Error(`Error de Supabase: ${error.message}`);
+                    }
+
+                    if (!data) {
+                        throw new Error('Producto no encontrado');
+                    }
+
+                    console.log('✅ Producto cargado:', data);
+                    this.displayProductDetails(data);
+                    
                 } catch (error) {
+                    console.error('❌ Error al cargar detalles del producto:', error);
                     this.showError('No se pudo cargar el producto');
                 }
             }
 
-            normalizeProduct(product) {
-                const safeFeatures = Array.isArray(product.features)
-                    ? product.features
-                    : typeof product.features === 'string' && product.features.length > 0
-                        ? product.features.split(',').map((item) => item.trim()).filter(Boolean)
-                        : [];
-
-                const rawPriceTiers = Array.isArray(product.price_tiers) ? product.price_tiers : [];
-                const normalizedTiers = rawPriceTiers.map((tier) => ({
-                    label: tier.label || tier.name || '',
-                    min_qty:
-                        tier.min_qty !== undefined && tier.min_qty !== null
-                            ? tier.min_qty
-                            : tier.min !== undefined
-                                ? tier.min
-                                : null,
-                    max_qty:
-                        tier.max_qty !== undefined && tier.max_qty !== null
-                            ? tier.max_qty
-                            : tier.max !== undefined
-                                ? tier.max
-                                : null,
-                    price: tier.price !== undefined && tier.price !== null ? tier.price : null,
-                    currency: tier.currency || 'EUR'
-                }));
-
-                return {
-                    ...product,
-                    brand: product.brand || '',
-                    nombre: product.nombre || '',
-                    categoria: product.categoria || '',
-                    precio: product.precio !== null && product.precio !== undefined ? Number(product.precio) : 0,
-                    potencia: product.potencia !== null && product.potencia !== undefined ? Number(product.potencia) : null,
-                    color: product.color || '',
-                    tipo: product.tipo || '',
-                    descripcion_es: product.descripcion_es || product['Descripcion ES'] || product.descripcion || '',
-                    descripcion_pt: product.descripcion_pt || product['descripcion PT'] || '',
-                    caracteristicas_text: product.caracteristicas || product['Carateristicas'] || '',
-                    especificaciones_text: product.especificaciones || product['Especificações'] || '',
-                    dimensiones_peso: product.dimensiones_peso || product['Dimensões e peso'] || '',
-                    ficha_tecnica: product.ficha_tecnica || product['Ficha tecnica'] || '',
-                    foto: product.foto || null,
-                    foto_2: product.foto_2 || product['Foto 2'] || '',
-                    price_tiers: normalizedTiers,
-                    features: safeFeatures
-                };
-            }
-
-            /**
-             * Obtener URL de imagen del producto (desde Supabase Storage o URL externa)
-             * @param {string} imageUrl - URL de la imagen
-             * @returns {string} URL formateada correctamente
-             */
-            getProductImageUrl(imageUrl) {
-                if (!imageUrl || imageUrl.trim() === '') {
-                    return null; // No hay imagen
-                }
-                
-                // Si ya es una URL completa (http/https), usarla directamente
-                if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-                    return imageUrl;
-                }
-                
-                // Si es una ruta relativa de Supabase Storage, construir la URL completa
-                // Las URLs de Supabase Storage tienen el formato: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
-                if (imageUrl.startsWith('productos/') || imageUrl.includes('product-images')) {
-                    const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
-                    // Si la URL no incluye el dominio completo, construirla
-                    if (!imageUrl.includes('supabase.co')) {
-                        return `${SUPABASE_URL}/storage/v1/object/public/product-images/${imageUrl}`;
-                    }
-                }
-                
-                // Si no coincide con ningún patrón, devolver la URL original
-                return imageUrl;
-            }
-
-            displayProductDetails() {
-                const product = this.product;
+            displayProductDetails(product) {
+                console.log('🎨 Mostrando detalles del producto:', product);
                 const contentDiv = document.getElementById('product-detail-content');
-                const description = this.getProductDescription(product);
+                console.log('🔍 Contenedor de contenido:', contentDiv);
+                
+                const badgeHtml = product.badge ? `<div class="product-badge">${product.badge}</div>` : '';
+                const featuresHtml = product.features ? product.features.map(feature => `<span class="feature-tag">${feature}</span>`).join('') : '';
+                
+                // Usar la descripción según el idioma actual
+                let descripcion = '';
+                if (this.currentLanguage === 'pt' && product.descripcion_pt) {
+                    descripcion = product.descripcion_pt;
+                } else if (this.currentLanguage === 'es' && product.descripcion_es) {
+                    descripcion = product.descripcion_es;
+                } else if (product.descripcion_pt) {
+                    descripcion = product.descripcion_pt;
+                }
+                
+                const translations = {
+                    pt: {
+                        specs: 'Especificações',
+                        features: 'Características',
+                        category: 'Categoria',
+                        power: 'Potência',
+                        color: 'Cor',
+                        type: 'Tipo',
+                        price: 'Preço',
+                        description: 'Descrição',
+                        characteristics: 'Características Detalhadas',
+                        specifications: 'Especificações Técnicas',
+                        dimensions: 'Dimensões e Peso',
+                        additionalImages: 'Imagens Adicionais',
+                        downloadDatasheet: 'Baixar Ficha Técnica',
+                voltage: 'Voltagem',
+                speeds: 'Velocidades',
+                heatLevels: 'Níveis de Calor',
+                weight: 'Peso',
+                dimensions: 'Dimensões',
+                frequency: 'Frequência',
+                airSpeed: 'Velocidade do Ar',
+                cableLength: 'Comprimento do Cabo',
+                ionicTech: 'Tecnologia Iônica',
+                ceramicTech: 'Tecnologia Cerâmica',
+                infraredTech: 'Tecnologia Infravermelha',
+                airFilter: 'Filtro de Ar',
+                airConcentrator: 'Concentrador de Ar',
+                diffuser: 'Difusor',
+                material: 'Material',
+                foldable: 'Plegável',
+                ergonomic: 'Ergonômico',
+                warranty: 'Garantia',
+                advancedFeatures: 'Características Avançadas'
+                    },
+                    es: {
+                        specs: 'Especificaciones',
+                        features: 'Características',
+                        category: 'Categoría',
+                        power: 'Potencia',
+                        color: 'Color',
+                        type: 'Tipo',
+                        price: 'Precio',
+                        description: 'Descripción',
+                        characteristics: 'Características Detalladas',
+                        specifications: 'Especificaciones Técnicas',
+                        dimensions: 'Dimensiones y Peso',
+                        additionalImages: 'Imágenes Adicionales',
+                        downloadDatasheet: 'Descargar Ficha Técnica',
+                voltage: 'Voltaje',
+                speeds: 'Velocidades',
+                heatLevels: 'Niveles de Calor',
+                weight: 'Peso',
+                dimensions: 'Dimensiones',
+                frequency: 'Frecuencia',
+                airSpeed: 'Velocidad del Aire',
+                cableLength: 'Longitud del Cable',
+                ionicTech: 'Tecnología Iónica',
+                ceramicTech: 'Tecnología Cerámica',
+                infraredTech: 'Tecnología Infrarroja',
+                airFilter: 'Filtro de Aire',
+                airConcentrator: 'Concentrador de Aire',
+                diffuser: 'Difusor',
+                material: 'Material',
+                foldable: 'Plegable',
+                ergonomic: 'Ergonómico',
+                warranty: 'Garantía',
+                advancedFeatures: 'Características Avanzadas'
+                    },
+                    en: {
+                        specs: 'Specifications',
+                        features: 'Features',
+                        category: 'Category',
+                        power: 'Power',
+                        color: 'Color',
+                        type: 'Type',
+                        price: 'Price',
+                        description: 'Description',
+                        characteristics: 'Detailed Characteristics',
+                        specifications: 'Technical Specifications',
+                        dimensions: 'Dimensions and Weight',
+                        additionalImages: 'Additional Images',
+                        downloadDatasheet: 'Download Datasheet',
+                voltage: 'Voltage',
+                speeds: 'Speeds',
+                heatLevels: 'Heat Levels',
+                weight: 'Weight',
+                dimensions: 'Dimensions',
+                frequency: 'Frequency',
+                airSpeed: 'Air Speed',
+                cableLength: 'Cable Length',
+                ionicTech: 'Ionic Technology',
+                ceramicTech: 'Ceramic Technology',
+                infraredTech: 'Infrared Technology',
+                airFilter: 'Air Filter',
+                airConcentrator: 'Air Concentrator',
+                diffuser: 'Diffuser',
+                material: 'Material',
+                foldable: 'Foldable',
+                ergonomic: 'Ergonomic',
+                warranty: 'Warranty',
+                advancedFeatures: 'Advanced Features'
+                    }
+                };
 
-                // Obtener URLs de imágenes desde Supabase Storage
-                const rawImages = [product.foto, product.foto_2, product.foto_3, product.foto_4].filter(
-                    (src) => typeof src === 'string' && src.trim() !== ''
-                );
-                const images = rawImages.map(img => this.getProductImageUrl(img)).filter(img => img !== null);
-                productImages = images.length > 0 ? images : [];
+                const t = translations[this.currentLanguage];
 
+                // Crear array de imágenes
+                const images = [product.foto];
+                if (product.foto_2) {
+                    images.push(product.foto_2);
+                }
+                if (product.foto_3) {
+                    images.push(product.foto_3);
+                }
+                
+                // Guardar imágenes en variable global para el carrusel
+                productImages = images;
+
+                console.log('🎨 Generando HTML para el producto...');
                 contentDiv.innerHTML = `
                     <div class="product-detail">
+                        <!-- Sección de imagen grande arriba -->
                         <div class="product-image-section">
                             <div class="image-carousel">
                                 <div class="carousel-container">
-                                    ${productImages.length > 0 ? 
-                                        `<img src="${productImages[0]}" alt="${product.nombre}" class="product-main-image" onclick="openImageModal(0)" onerror="this.style.display='none'">` :
-                                        `<div style="width:100%;height:600px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#9ca3af;border-radius:12px;">
-                                            <i class="fas fa-image" style="font-size:4rem;"></i>
-                                        </div>`
-                                    }
-                                    ${
-                                        productImages.length > 1
-                                            ? `
+                                    <img src="${images[0]}" alt="${product.nombre}" class="product-main-image" onclick="openImageModal(0)" onerror="this.src='secador.png'">
+                                    ${images.length > 1 ? `
                                         <button class="carousel-arrow carousel-prev" onclick="changeImage(-1)">
                                             <i class="fas fa-chevron-left"></i>
                                         </button>
@@ -1140,173 +1183,254 @@
                                             <i class="fas fa-chevron-right"></i>
                                         </button>
                                         <div class="carousel-indicators">
-                                            ${productImages
-                                                .map(
-                                                    (_, index) => `
+                                            ${images.map((_, index) => `
                                                 <span class="indicator ${index === 0 ? 'active' : ''}" onclick="goToImage(${index})"></span>
-                                            `
-                                                )
-                                                .join('')}
+                                            `).join('')}
                                         </div>
-                                    `
-                                            : ''
-                                    }
+                                    ` : ''}
                                 </div>
                             </div>
+                            ${badgeHtml}
                         </div>
-
+                        
+                        <!-- Sección de información abajo -->
                         <div class="product-info-section">
+                            <!-- Header con título, precio y botones -->
                             <div class="product-header">
                                 <div class="product-title-price">
-                                    <div class="product-price">€${product.precio.toFixed(2)}</div>
-                                    ${
-                                        product.ficha_tecnica
-                                            ? `
-                                        <div class="download-section" style="margin-top:12px;">
-                                            <a href="${product.ficha_tecnica}" target="_blank" rel="noopener" class="download-button">
-                                                <i class="fas fa-download"></i>
-                                                ${this.translateLabel('download')}
-                                            </a>
-                                        </div>`
-                                            : ''
-                                    }
+                            <h1 class="product-title">${product.nombre}</h1>
+                            <div class="product-price">€${product.precio}</div>
+                            
+                            ${product.ficha_tecnica ? `
+                                    <div class="download-section" style="margin-top: 12px;">
+                                <a href="${product.ficha_tecnica}" target="_blank" class="download-button">
+                                    <i class="fas fa-download"></i>
+                                    ${t.downloadDatasheet}
+                                </a>
+                            </div>
+                            ` : ''}
+                                </div>
+                                
+                                <!-- Botones de acción en el header -->
+                                <div class="product-actions-header">
+                                    <button class="btn btn-primary" onclick="addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})" style="width: 100%; padding: 12px 16px; font-size: 0.95rem; font-weight: 500;">
+                                        <i class="fas fa-shopping-cart"></i>
+                                        ${this.currentLanguage === 'pt' ? 'Adicionar ao Carrinho' : 
+                                          this.currentLanguage === 'es' ? 'Agregar al Carrito' : 
+                                          'Add to Cart'}
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="window.location.href='carrito-compras.html'" style="width: 100%; padding: 12px 16px; font-size: 0.95rem; font-weight: 500;">
+                                        <i class="fas fa-eye"></i>
+                                        ${this.currentLanguage === 'pt' ? 'Ver Carrinho' : 
+                                          this.currentLanguage === 'es' ? 'Ver Carrito' : 
+                                          'View Cart'}
+                                    </button>
                                 </div>
                             </div>
-
+                            
+                            <!-- Contenido principal en una sola columna -->
                             <div class="product-content">
-                                ${
-                                    description
-                                        ? `
-                                    <div class="product-description">
-                                        <h3 class="description-title">
-                                            <i class="fas fa-align-left"></i>
-                                            ${this.translateLabel('description')}
-                                        </h3>
-                                        <p class="description-text">${this.formatMultilineText(description)}</p>
-                                    </div>`
-                                        : ''
-                                }
-
-                                ${
-                                    product.especificaciones_text
-                                        ? `
-                                    <div class="product-advanced-features">
-                                        <h3 class="advanced-features-title">
-                                            <i class="fas fa-clipboard-list"></i>
-                                            ${this.translateLabel('specifications')}
-                                        </h3>
-                                        <p class="description-text">${this.formatMultilineText(product.especificaciones_text)}</p>
-                                    </div>`
-                                        : ''
-                                }
+                                <!-- Descripción -->
+                            ${descripcion ? `
+                            <div class="product-description">
+                                <h3 class="description-title">
+                                    <i class="fas fa-align-left"></i>
+                                    ${t.description}
+                                </h3>
+                                <p class="description-text">${descripcion}</p>
+                            </div>
+                            ` : ''}
+                            
+                                <!-- Especificaciones básicas -->
+                            <div class="product-specs">
+                                <h3 class="specs-title">
+                                    <i class="fas fa-cogs"></i>
+                                    ${t.specs}
+                                </h3>
+                                <div class="specs-grid">
+                                    ${product.potencia ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.power}:</span>
+                                        <span class="spec-value">${product.potencia}W</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.color ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.color}:</span>
+                                        <span class="spec-value">${this.translateColor(product.color)}</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.tipo_instalacion ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.type}:</span>
+                                        <span class="spec-value">${this.translateType(product.tipo_instalacion)}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                                <!-- Características -->
+                            <div class="product-features">
+                                <h3 class="features-title">
+                                    <i class="fas fa-star"></i>
+                                    ${t.features}
+                                </h3>
+                                <div class="features-list">
+                                    ${featuresHtml}
+                                </div>
+                            </div>
+                            
+                                <!-- Especificaciones técnicas -->
+                            <div class="product-specifications">
+                                <h3 class="specifications-title">
+                                    <i class="fas fa-clipboard-list"></i>
+                                    ${t.specifications}
+                                </h3>
+                                <div class="specifications-grid">
+                                    ${product.potencia ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.power}:</span>
+                                        <span class="spec-value">${product.potencia}W</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.voltaje ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.voltage}:</span>
+                                        <span class="spec-value">${product.voltaje}V</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.frecuencia ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.frequency}:</span>
+                                        <span class="spec-value">${product.frecuencia}Hz</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.velocidad_aire ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.airSpeed}:</span>
+                                        <span class="spec-value">${product.velocidad_aire} m/s</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.velocidades ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.speeds}:</span>
+                                        <span class="spec-value">${product.velocidades}</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.niveles_calor ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.heatLevels}:</span>
+                                        <span class="spec-value">${product.niveles_calor}</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.cable_largo ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.cableLength}:</span>
+                                        <span class="spec-value">${product.cable_largo}m</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.peso ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.weight}:</span>
+                                        <span class="spec-value">${product.peso}kg</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.dimensiones ? `
+                                    <div class="spec-item spec-item-dimensions">
+                                        <span class="spec-label">${t.dimensions}:</span>
+                                        <span class="spec-value">${this.formatDimensions(product.dimensiones)}</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.material ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.material}:</span>
+                                        <span class="spec-value">${product.material}</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.garantia ? `
+                                    <div class="spec-item">
+                                        <span class="spec-label">${t.warranty}:</span>
+                                        <span class="spec-value">${product.garantia} meses</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Características Avanzadas -->
+                            ${(product.tecnologia_ionica || product.tecnologia_ceramica || product.tecnologia_infrarroja || product.filtro_aire || product.concentrador_aire || product.difusor || product.plegable || product.ergonomico) ? `
+                            <div class="product-advanced-features">
+                                <h3 class="advanced-features-title">
+                                    <i class="fas fa-cogs"></i>
+                                    ${t.advancedFeatures}
+                                </h3>
+                                <div class="advanced-features-grid">
+                                    ${product.tecnologia_ionica ? `
+                                    <div class="feature-item">
+                                        <span class="feature-label">${t.ionicTech}:</span>
+                                        <span class="feature-value">✓ Sim</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.tecnologia_ceramica ? `
+                                    <div class="feature-item">
+                                        <span class="feature-label">${t.ceramicTech}:</span>
+                                        <span class="feature-value">✓ Sim</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.tecnologia_infrarroja ? `
+                                    <div class="feature-item">
+                                        <span class="feature-label">${t.infraredTech}:</span>
+                                        <span class="feature-value">✓ Sim</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.filtro_aire ? `
+                                    <div class="feature-item">
+                                        <span class="feature-label">${t.airFilter}:</span>
+                                        <span class="feature-value">✓ Sim</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.concentrador_aire ? `
+                                    <div class="feature-item">
+                                        <span class="feature-label">${t.airConcentrator}:</span>
+                                        <span class="feature-value">✓ Sim</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.difusor ? `
+                                    <div class="feature-item">
+                                        <span class="feature-label">${t.diffuser}:</span>
+                                        <span class="feature-value">✓ Sim</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.plegable ? `
+                                    <div class="feature-item">
+                                        <span class="feature-label">${t.foldable}:</span>
+                                        <span class="feature-value">✓ Sim</span>
+                                    </div>
+                                    ` : ''}
+                                    ${product.ergonomico ? `
+                                    <div class="feature-item">
+                                        <span class="feature-label">${t.ergonomic}:</span>
+                                        <span class="feature-value">✓ Sim</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            ` : ''}
+                            
+                                <!-- Dimensiones -->
+                            ${product['Dimensões e peso'] ? `
+                            <div class="product-dimensions">
+                                <h3 class="dimensions-title">
+                                    <i class="fas fa-ruler"></i>
+                                    ${t.dimensions}
+                                </h3>
+                                <p class="dimensions-text">${product['Dimensões e peso']}</p>
+                            </div>
+                            ` : ''}
                             </div>
                         </div>
                     </div>
                 `;
-                const backButton = document.querySelector('.back-button');
-                if (backButton) {
-                    backButton.innerHTML = `<i class="fas fa-arrow-left"></i> ${this.translateLabel('backButton')}`;
-                }
-            }
-
-            renderPriceTiers(tiers) {
-                if (!tiers || tiers.length === 0) {
-                    return '';
-                }
-
-                const rows = tiers
-                    .filter((tier) => tier.price !== null && tier.price !== undefined)
-                    .map((tier) => {
-                        const min = tier.min_qty !== null && tier.min_qty !== undefined ? tier.min_qty : null;
-                        const max = tier.max_qty !== null && tier.max_qty !== undefined ? tier.max_qty : null;
-                        let rangeLabel = '';
-                        if (min !== null && max !== null) {
-                            rangeLabel = `${min} - ${max} uds`;
-                        } else if (min !== null) {
-                            rangeLabel = `${min}+ uds`;
-                        } else if (max !== null) {
-                            rangeLabel = `≤ ${max} uds`;
-                        } else {
-                            rangeLabel = '—';
-                        }
-
-                        const label = tier.label || this.translateLabel('priceTierDefault');
-                        return `
-                            <tr>
-                                <td>${label}</td>
-                                <td>${rangeLabel}</td>
-                                <td>${tier.currency || 'EUR'} ${Number(tier.price).toFixed(2)}</td>
-                            </tr>
-                        `;
-                    })
-                    .join('');
-
-                if (!rows) {
-                    return '';
-                }
-
-                return `
-                    <div class="product-special-features">
-                        <h3 class="special-features-title">
-                            <i class="fas fa-tags"></i>
-                            ${this.translateLabel('priceTiers')}
-                        </h3>
-                        <div class="table-responsive">
-                            <table style="width:100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="background:#f1f5f9;">
-                                        <th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">${this.translateLabel('priceTierLabel')}</th>
-                                        <th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">${this.translateLabel('priceTierRange')}</th>
-                                        <th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">${this.translateLabel('priceTierPrice')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rows}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            }
-
-            getProductDescription(product) {
-                if (this.currentLanguage === 'es' && product.descripcion_es) {
-                    return product.descripcion_es;
-                }
-                if (this.currentLanguage === 'pt' && product.descripcion_pt) {
-                    return product.descripcion_pt;
-                }
-                return product.descripcion_es || product.descripcion_pt || '';
-            }
-
-            formatMultilineText(text) {
-                return text.replace(/\n/g, '<br>');
-            }
-
-            translateLabel(key) {
-                const labels = {
-                    brand: { pt: 'Marca', es: 'Marca', en: 'Brand' },
-                    category: { pt: 'Categoria', es: 'Categoría', en: 'Category' },
-                    type: { pt: 'Tipo', es: 'Tipo', en: 'Type' },
-                    power: { pt: 'Potência', es: 'Potencia', en: 'Power' },
-                    color: { pt: 'Cor', es: 'Color', en: 'Color' },
-                    specs: { pt: 'Especificações', es: 'Especificaciones', en: 'Specifications' },
-                    features: { pt: 'Características', es: 'Características', en: 'Features' },
-                    description: { pt: 'Descrição', es: 'Descripción', en: 'Description' },
-                    characteristics: { pt: 'Características Detalhadas', es: 'Características detalladas', en: 'Detailed features' },
-                    specifications: { pt: 'Especificações Técnicas', es: 'Especificaciones técnicas', en: 'Technical Specifications' },
-                    dimensions: { pt: 'Dimensões e Peso', es: 'Dimensiones y Peso', en: 'Dimensions & Weight' },
-                    download: { pt: 'Baixar ficha técnica', es: 'Descargar ficha técnica', en: 'Download datasheet' },
-                    addToCart: { pt: 'Adicionar ao carrinho', es: 'Agregar al carrito', en: 'Add to cart' },
-                    viewCart: { pt: 'Ver carrinho', es: 'Ver carrito', en: 'View cart' },
-                    priceTiers: { pt: 'Escalões de preço', es: 'Escalones de precio', en: 'Price tiers' },
-                    priceTierLabel: { pt: 'Escalão', es: 'Escalón', en: 'Tier' },
-                    priceTierRange: { pt: 'Unidades', es: 'Unidades', en: 'Units' },
-                    priceTierPrice: { pt: 'Preço', es: 'Precio', en: 'Price' },
-                    priceTierDefault: { pt: 'Escalão', es: 'Escalón', en: 'Tier' },
-                    backButton: { pt: 'Voltar aos produtos', es: 'Volver a productos', en: 'Back to products' }
-                };
-                return labels[key]?.[this.currentLanguage] || labels[key]?.pt || key;
+                console.log('✅ HTML asignado al contenedor');
             }
 
             translateCategory(category) {
@@ -1319,12 +1443,12 @@
                     es: {
                         secadores: 'Secadores',
                         ironing: 'Planchado',
-                        'porta-malas': 'Porta-malas'
+                        'porta-malas': 'Porta malas'
                     },
                     en: {
-                        secadores: 'Hair dryers',
+                        secadores: 'Hair Dryers',
                         ironing: 'Ironing',
-                        'porta-malas': 'Luggage racks'
+                        'porta-malas': 'Luggage Racks'
                     }
                 };
                 return translations[this.currentLanguage][category] || category;
@@ -1336,28 +1460,82 @@
                         black: 'Preto',
                         white: 'Branco',
                         silver: 'Prata',
-                        pink: 'Rosa',
-                        blue: 'Azul',
-                        red: 'Vermelho'
+                        pink: 'Rosa'
                     },
                     es: {
                         black: 'Negro',
                         white: 'Blanco',
                         silver: 'Plateado',
-                        pink: 'Rosa',
-                        blue: 'Azul',
-                        red: 'Rojo'
+                        pink: 'Rosa'
                     },
                     en: {
                         black: 'Black',
                         white: 'White',
                         silver: 'Silver',
-                        pink: 'Pink',
-                        blue: 'Blue',
-                        red: 'Red'
+                        pink: 'Pink'
                     }
                 };
                 return translations[this.currentLanguage][color] || color;
+            }
+
+            translateType(type) {
+                const translations = {
+                    pt: {
+                        suelto: 'Suelto',
+                        pared: 'Pared',
+                        vapor: 'Vapor',
+                        seco: 'Seco',
+                        madera: 'Madeira',
+                        metalico: 'Metálico',
+                        dobravel: 'Dobrável',
+                        inalambrico: 'Sem fio'
+                    },
+                    es: {
+                        suelto: 'Suelto',
+                        pared: 'Pared',
+                        vapor: 'Vapor',
+                        seco: 'Seco',
+                        madera: 'Madera',
+                        metalico: 'Metálico',
+                        dobravel: 'Dobrable',
+                        inalambrico: 'Inalámbrico'
+                    },
+                    en: {
+                        suelto: 'Handheld',
+                        pared: 'Wall-mounted',
+                        vapor: 'Steam',
+                        seco: 'Dry',
+                        madera: 'Wood',
+                        metalico: 'Metal',
+                        dobravel: 'Foldable',
+                        inalambrico: 'Wireless'
+                    }
+                };
+                return translations[this.currentLanguage][type] || type;
+            }
+
+            formatDimensions(dimensions) {
+                if (!dimensions) return '';
+                
+                // Limpiar saltos de línea y espacios extra
+                let cleanDimensions = dimensions.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+                
+                // Si ya contiene "mm" o está bien formateado, devolverlo tal como está
+                if (cleanDimensions.includes('mm') || (cleanDimensions.includes('x') && cleanDimensions.includes(' '))) {
+                    return cleanDimensions;
+                }
+                
+                // Formatear dimensiones como "260x90x280" a "260mm x 90mm x 280mm"
+                const dimensionPattern = /(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/;
+                const match = cleanDimensions.match(dimensionPattern);
+                
+                if (match) {
+                    const [, length, width, height] = match;
+                    return `${length}mm x ${width}mm x ${height}mm`;
+                }
+                
+                // Si no coincide con el patrón, devolver tal como está (limpio)
+                return cleanDimensions;
             }
 
             showError(message) {
@@ -1372,29 +1550,37 @@
             }
 
             setupLanguageSelector() {
+                this.currentLanguage = document.documentElement.lang || 'pt';
                 this.updateLanguageUI();
-                document.querySelectorAll('.flag-btn').forEach((button) => {
-                    button.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const newLang = button.getAttribute('data-lang');
-                        this.changeLanguage(newLang);
-                    });
+                
+                document.querySelectorAll('.flag-btn').forEach(button => {
+                    button.addEventListener('click', (e) => this.handleLanguageChange(e));
                 });
             }
 
-            changeLanguage(lang) {
-                this.currentLanguage = lang;
-                document.documentElement.lang = lang;
-                localStorage.setItem('language', lang);
-                this.updateLanguageUI();
-                if (this.product) {
-                    this.displayProductDetails();
-                }
+            handleLanguageChange(e) {
+                e.preventDefault();
+                const button = e.currentTarget;
+                const newLang = button.getAttribute('data-lang');
+                
+                document.documentElement.lang = newLang;
+                this.currentLanguage = newLang;
+                
+                document.querySelectorAll('.flag-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+                
+                // Recargar detalles del producto con el nuevo idioma
+                this.loadProductDetails();
             }
 
             updateLanguageUI() {
-                document.querySelectorAll('.flag-btn').forEach((btn) => {
-                    btn.classList.toggle('active', btn.getAttribute('data-lang') === this.currentLanguage);
+                document.querySelectorAll('.flag-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-lang') === this.currentLanguage) {
+                        btn.classList.add('active');
+                    }
                 });
             }
         }
@@ -1502,17 +1688,9 @@
             });
         }
 
-        let productDetailPage;
-
         // Inicializar cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Verificar autenticación primero
-            const isAuth = await window.authManager.requireAuth('login.html');
-            if (!isAuth) {
-                return; // Redirige a login.html
-            }
-
-            productDetailPage = new ProductDetailPage();
+        document.addEventListener('DOMContentLoaded', () => {
+            new ProductDetailPage();
             
             // Cerrar modal con tecla Escape
             document.addEventListener('keydown', (e) => {
@@ -1575,46 +1753,78 @@
             }
         });
 
-        // Función global para cambiar idioma (utilizada por los botones del header)
+        // Función para cambiar idioma
         function changeLanguage(lang) {
-            if (productDetailPage) {
-                productDetailPage.changeLanguage(lang);
-            } else {
-                document.documentElement.lang = lang;
-                localStorage.setItem('language', lang);
-            }
-            // Actualizar botones de navegación
-            updateNavigationButtons(lang);
+            document.documentElement.lang = lang;
+            localStorage.setItem('language', lang);
+            
+            // Actualizar banderas activas
+            document.querySelectorAll('.flag-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-lang="${lang}"]`).classList.add('active');
+            
+            // Actualizar contenido según el idioma
+            updatePageContent(lang);
         }
-        
-        // Función para actualizar botones de navegación
-        function updateNavigationButtons(lang) {
-            const navTranslations = {
+
+        // Función para actualizar el contenido de la página según el idioma
+        function updatePageContent(lang) {
+            const translations = {
                 pt: {
-                    budget: 'Orçamento',
-                    createProduct: 'Criador/Editor'
+                    backButton: 'Voltar aos produtos',
+                    specifications: 'Especificações',
+                    characteristics: 'Características',
+                    dimensions: 'Dimensões e Peso',
+                    downloadButton: 'Baixar Ficha Técnica'
                 },
                 es: {
-                    budget: 'Presupuesto',
-                    createProduct: 'Creador/Editor'
+                    backButton: 'Volver a productos',
+                    specifications: 'Especificaciones',
+                    characteristics: 'Características',
+                    dimensions: 'Dimensiones y Peso',
+                    downloadButton: 'Descargar Ficha Técnica'
                 },
                 en: {
-                    budget: 'Budget',
-                    createProduct: 'Creator/Editor'
+                    backButton: 'Back to products',
+                    specifications: 'Specifications',
+                    characteristics: 'Characteristics',
+                    dimensions: 'Dimensions and Weight',
+                    downloadButton: 'Download Technical Sheet'
                 }
             };
+
+            const t = translations[lang] || translations.pt;
             
-            const t = navTranslations[lang] || navTranslations.pt;
+            // Actualizar botón de volver
+            const backButton = document.querySelector('.back-button');
+            if (backButton) {
+                backButton.textContent = t.backButton;
+            }
             
-            const cartLink = document.getElementById('nav-cart-link');
-            const createProductLink = document.getElementById('create-product-text');
+            // Actualizar títulos de secciones
+            const specTitle = document.querySelector('.specs-title');
+            if (specTitle) specTitle.textContent = t.specifications;
             
-            if (cartLink) cartLink.textContent = t.budget;
-            if (createProductLink) createProductLink.textContent = t.createProduct;
+            const charTitle = document.querySelector('.characteristics-title');
+            if (charTitle) charTitle.textContent = t.characteristics;
+            
+            const dimTitle = document.querySelector('.dimensions-title');
+            if (dimTitle) dimTitle.textContent = t.dimensions;
+            
+            // Actualizar botón de descarga
+            const downloadButton = document.querySelector('.download-button');
+            if (downloadButton) {
+                downloadButton.textContent = t.downloadButton;
+            }
         }
+
+        // Inicializar idioma al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedLanguage = localStorage.getItem('language') || 'pt';
+            changeLanguage(savedLanguage);
+        });
     </script>
-    <script src="menu-hamburguesa.js"></script>
-    <script src="theme-common.js"></script>
 </body>
 </html>
 

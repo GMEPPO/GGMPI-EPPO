@@ -10,262 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="menu-hamburguesa.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="supabase-config-universal.js"></script>
     <script src="translation-system.js"></script>
-    <script src="auth.js"></script>
-    <script src="stock-warning.js"></script>
-    <style>
-        /* Menú desplegable hamburguesa */
-        .menu-dropdown {
-            position: relative;
-        }
-
-        .menu-toggle {
-            background: none;
-            border: none;
-            color: var(--text-primary);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: var(--space-2) var(--space-3);
-            border-radius: var(--radius-md);
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .menu-toggle:hover {
-            background: var(--bg-gray-100);
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            margin-top: var(--space-2);
-            background: var(--bg-white);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xl);
-            min-width: 220px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-            z-index: 1000;
-            border: 1px solid var(--bg-gray-200);
-        }
-
-        .dropdown-menu.active {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .dropdown-link {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            padding: var(--space-3) var(--space-4);
-            color: var(--text-primary);
-            text-decoration: none;
-            transition: all 0.2s ease;
-            border-bottom: 1px solid var(--bg-gray-200);
-            font-size: 0.875rem;
-        }
-
-        .dropdown-link:last-child {
-            border-bottom: none;
-        }
-
-        .dropdown-link:hover {
-            background: var(--bg-gray-100);
-            color: var(--brand-blue);
-        }
-
-        .dropdown-link.active {
-            background: var(--primary-500);
-            color: #ffffff;
-            font-weight: 600;
-        }
-
-        [data-theme="dark"] .dropdown-link.active {
-            background: var(--primary-600);
-            color: #ffffff;
-        }
-
-        .dropdown-link i {
-            width: 20px;
-            text-align: center;
-            color: var(--text-secondary);
-        }
-
-        .dropdown-link:hover i {
-            color: var(--brand-blue);
-        }
-
-        .dropdown-link.active i {
-            color: #ffffff;
-        }
-
-        [data-theme="dark"] .dropdown-link.active i {
-            color: #ffffff;
-        }
-
-        @media (max-width: 768px) {
-            .dropdown-menu {
-                right: auto;
-                left: 0;
-            }
-        }
-
-        /* Botón de ordenamiento desplegable */
-        .sort-dropdown-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 16px;
-        }
-
-        .sort-dropdown-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 14px;
-            background: var(--bg-card);
-            border: 1px solid var(--bg-gray-300);
-            border-radius: var(--radius-md);
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .sort-dropdown-btn:hover {
-            background: var(--bg-gray-100);
-            border-color: var(--primary-400);
-        }
-
-        .sort-dropdown-btn .sort-arrow {
-            font-size: 0.7rem;
-            transition: transform 0.2s ease;
-        }
-
-        .sort-dropdown-container.open .sort-arrow {
-            transform: rotate(180deg);
-        }
-
-        .sort-dropdown-menu {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            min-width: 220px;
-            background: #ffffff;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-8px);
-            transition: all 0.2s ease;
-            z-index: 1000;
-            overflow: hidden;
-        }
-
-        [data-theme="dark"] .sort-dropdown-menu {
-            background: #1f2937;
-            border-color: #374151;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-        }
-
-        .sort-dropdown-container.open .sort-dropdown-menu {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .sort-option {
-            display: flex !important;
-            align-items: center !important;
-            gap: 12px !important;
-            width: 100% !important;
-            padding: 12px 16px !important;
-            background: transparent !important;
-            border: none !important;
-            color: #374151 !important;
-            font-size: 0.9rem !important;
-            font-weight: 500 !important;
-            text-align: left !important;
-            cursor: pointer !important;
-            transition: all 0.15s ease !important;
-            white-space: nowrap !important;
-        }
-
-        [data-theme="dark"] .sort-option {
-            color: #e5e7eb !important;
-        }
-
-        .sort-option:hover {
-            background: #f3f4f6 !important;
-        }
-
-        [data-theme="dark"] .sort-option:hover {
-            background: #374151 !important;
-        }
-
-        .sort-option i:first-child {
-            width: 20px !important;
-            min-width: 20px !important;
-            font-size: 0.9rem !important;
-            color: #6b7280 !important;
-            flex-shrink: 0 !important;
-        }
-
-        [data-theme="dark"] .sort-option i:first-child {
-            color: #9ca3af !important;
-        }
-
-        .sort-option span {
-            flex: 1 !important;
-            display: inline-block !important;
-            color: inherit !important;
-            font-size: 0.9rem !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-
-        .sort-option .check-icon {
-            margin-left: auto !important;
-            color: #3b82f6 !important;
-            opacity: 0 !important;
-            transition: opacity 0.15s ease !important;
-            flex-shrink: 0 !important;
-        }
-
-        .sort-option.active {
-            background: rgba(59, 130, 246, 0.1) !important;
-            color: #2563eb !important;
-        }
-
-        [data-theme="dark"] .sort-option.active {
-            background: rgba(59, 130, 246, 0.2) !important;
-            color: #60a5fa !important;
-        }
-
-        .sort-option.active i:first-child {
-            color: #3b82f6 !important;
-        }
-
-        .sort-option.active .check-icon {
-            opacity: 1 !important;
-        }
-
-        .sort-option:not(:last-child) {
-            border-bottom: 1px solid var(--bg-gray-100);
-        }
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -277,32 +24,8 @@
             <nav class="nav">
                 <a href="index.html" class="nav-link">Home</a>
                 <a href="productos-dinamico.html" class="nav-link">Products</a>
-                
-                <!-- Menú hamburguesa -->
-                <div class="menu-dropdown">
-                    <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Toggle menu">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="dropdown-menu" id="dropdownMenu">
-                        <a href="comparar-productos.html" class="dropdown-link">
-                            <i class="fas fa-balance-scale"></i>
-                            <span>Comparar</span>
-                        </a>
-                        <a href="carrito-compras.html" class="dropdown-link" id="nav-cart-link">
-                            <i class="fas fa-shopping-cart"></i>
-                            <span>Presupuesto</span>
-                        </a>
-                        <a href="consultar-propuestas.html" class="dropdown-link" id="nav-proposals-link">
-                            <i class="fas fa-file-invoice"></i>
-                            <span>Propuestas</span>
-                        </a>
-                        <a href="selector-productos.html" class="dropdown-link" id="nav-create-product-link">
-                            <i class="fas fa-edit"></i>
-                            <span id="create-product-text">Creador/Editor</span>
-                        </a>
-                    </div>
-                </div>
-                
+                <a href="comparar-productos.html" class="nav-link">Comparar</a>
+                <a href="carrito-compras.html" class="nav-link">Carrito</a>
                 <div class="language-selector">
                     <button class="flag-btn active" data-lang="pt" title="Português" onclick="changeLanguage('pt')">
                         <img src="https://flagcdn.com/w20/pt.png" alt="Portugal">
@@ -332,11 +55,25 @@
                 <!-- Filtro de Categorías -->
                 <div class="filter-section">
                     <h4 id="categories-title" class="filter-title">Categorias</h4>
-                    <div class="filter-options" id="category-filters-container">
-                        <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem; margin-bottom: 10px;"></i>
-                            <p>Cargando categorías...</p>
-                        </div>
+                    <div class="filter-options">
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="secadores" checked>
+                            <span class="checkmark"></span>
+                            <i class="fas fa-wind"></i>
+                            <span id="secadores-label">Secadores</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="ironing">
+                            <span class="checkmark"></span>
+                            <i class="fas fa-tshirt"></i>
+                            <span id="ironing-label">Passar a ferro</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" value="porta-malas">
+                            <span class="checkmark"></span>
+                            <i class="fas fa-suitcase"></i>
+                            <span id="porta-malas-label">Porta-malas</span>
+                        </label>
                     </div>
                 </div>
 
@@ -351,48 +88,50 @@
                     </div>
                 </div>
 
-                <!-- Contenedor para filtros dinámicos (se llenará cuando se seleccione una categoría) -->
-                <div id="dynamic-filters-container">
-                    <!-- Los filtros dinámicos se insertarán aquí -->
+                <!-- Filtro de Potencia -->
+                <div class="filter-section" id="powerFilter">
+                    <h4 id="power-title" class="filter-title">Potência</h4>
+                    <div class="filter-options" id="powerOptions">
+                        <!-- Se llena dinámicamente según la categoría seleccionada -->
+                    </div>
+                </div>
+
+                <!-- Filtro de Color -->
+                <div class="filter-section" id="colorFilter">
+                    <h4 id="color-title" class="filter-title">Cor</h4>
+                    <div class="color-options" id="colorOptions">
+                        <!-- Se llena dinámicamente según la categoría seleccionada -->
+                    </div>
+                </div>
+
+                <!-- Filtro de Tipo (Dinámico) -->
+                <div class="filter-section" id="typeFilter">
+                    <h4 id="type-title" class="filter-title">Tipo</h4>
+                    <div class="filter-options" id="typeOptions">
+                        <!-- Se llenará dinámicamente según las categorías seleccionadas -->
+                    </div>
+                </div>
+
+                <!-- Filtro de Tecnología (Solo para Secadores) -->
+                <div class="filter-section" id="technologyFilter">
+                    <h4 id="technology-title" class="filter-title">Tecnologia</h4>
+                    <div class="filter-options" id="technologyOptions">
+                        <!-- Se llena dinámicamente solo para secadores -->
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="filter-actions">
+                    <button class="btn-clear" id="clearFilters">Limpar Filtros</button>
+                    <button class="btn-apply" id="applyFilters">Aplicar Filtros</button>
                 </div>
             </aside>
 
             <!-- Contenido principal de productos -->
             <section class="products-content">
-                <div class="products-header" style="display: none;">
+                <div class="products-header">
                     <h1 class="products-title">Cargando productos...</h1>
                     <p class="products-subtitle">Por favor espera mientras cargamos los productos</p>
-                </div>
-
-                <!-- Botón de ordenamiento -->
-                <div class="sort-dropdown-container">
-                    <button class="sort-dropdown-btn" id="sort-dropdown-btn" title="Ordenar productos">
-                        <i class="fas fa-sort"></i>
-                        <span id="sort-current-label">Ordenar</span>
-                        <i class="fas fa-chevron-down sort-arrow"></i>
-                    </button>
-                    <div class="sort-dropdown-menu" id="sort-dropdown-menu">
-                        <button class="sort-option active" data-sort="default">
-                            <i class="fas fa-th-large"></i>
-                            <span data-translate="sortDefault">Predefinido</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </button>
-                        <button class="sort-option" data-sort="price-asc">
-                            <i class="fas fa-sort-amount-up"></i>
-                            <span data-translate="sortPriceAsc">Preço: menor a maior</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </button>
-                        <button class="sort-option" data-sort="price-desc">
-                            <i class="fas fa-sort-amount-down"></i>
-                            <span data-translate="sortPriceDesc">Preço: maior a menor</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </button>
-                        <button class="sort-option" data-sort="category">
-                            <i class="fas fa-layer-group"></i>
-                            <span data-translate="sortCategory">Categoria</span>
-                            <i class="fas fa-check check-icon"></i>
-                        </button>
-                    </div>
                 </div>
 
                 <div class="products-grid" id="products-grid">
@@ -404,154 +143,6 @@
 
     <script src="productos-dinamico-supabase.js"></script>
     <script src="carrito-compras.js"></script>
-    
-    <script>
-        // Función para preguntar cantidad y agregar al carrito
-        function askQuantityAndAddToCart(product) {
-            // Obtener idioma actual
-            const currentLang = localStorage.getItem('language') || 'pt';
-            
-            const translations = {
-                pt: {
-                    title: 'Adicionar ao Orçamento',
-                    message: 'Quantidade:',
-                    confirm: 'Adicionar',
-                    cancel: 'Cancelar',
-                    invalid: 'Por favor, insira uma quantidade válida (1-1000)'
-                },
-                es: {
-                    title: 'Agregar al Presupuesto',
-                    message: 'Cantidad:',
-                    confirm: 'Agregar',
-                    cancel: 'Cancelar',
-                    invalid: 'Por favor, ingrese una cantidad válida (1-1000)'
-                },
-                en: {
-                    title: 'Add to Budget',
-                    message: 'Quantity:',
-                    confirm: 'Add',
-                    cancel: 'Cancel',
-                    invalid: 'Please enter a valid quantity (1-1000)'
-                }
-            };
-            
-            const t = translations[currentLang] || translations.pt;
-            
-            // Crear modal para pedir cantidad
-            const modal = document.createElement('div');
-            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;';
-            
-            const modalContent = document.createElement('div');
-            modalContent.style.cssText = 'background: var(--bg-white, #fff); padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);';
-            
-            modalContent.innerHTML = `
-                <h2 style="margin: 0 0 20px 0; color: var(--text-primary, #333); font-size: 1.5rem;">${t.title}</h2>
-                <p style="margin: 0 0 10px 0; color: var(--text-secondary, #666);">${product.nombre || product.modelo || 'Producto'}</p>
-                <label style="display: block; margin: 20px 0 10px 0; color: var(--text-primary, #333); font-weight: 600;">${t.message}</label>
-                <input type="number" id="quantityModalInput" min="1" max="50000" value="1" style="width: 100%; padding: 12px; border: 2px solid var(--border-color, #ddd); border-radius: 8px; font-size: 1rem; margin-bottom: 20px;" autofocus>
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button id="cancelQuantityBtn" style="padding: 10px 20px; background: var(--bg-gray-200, #e5e7eb); color: var(--text-primary, #333); border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;">${t.cancel}</button>
-                    <button id="confirmQuantityBtn" style="padding: 10px 20px; background: var(--primary-500, #3b82f6); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600;">${t.confirm}</button>
-                </div>
-            `;
-            
-            modal.appendChild(modalContent);
-            document.body.appendChild(modal);
-            
-            const quantityInput = modalContent.querySelector('#quantityModalInput');
-            const confirmBtn = modalContent.querySelector('#confirmQuantityBtn');
-            const cancelBtn = modalContent.querySelector('#cancelQuantityBtn');
-            
-            // Función para cerrar modal
-            const closeModal = () => {
-                document.body.removeChild(modal);
-            };
-            
-            // Función para confirmar
-            const confirmAdd = () => {
-                const quantity = parseInt(quantityInput.value, 10);
-                
-                if (isNaN(quantity) || quantity < 1 || quantity > 1000) {
-                    alert(t.invalid);
-                    quantityInput.focus();
-                    return;
-                }
-                
-                // Cerrar modal primero
-                closeModal();
-                
-                // Agregar al carrito con la cantidad especificada
-                try {
-                    if (window.addToCart) {
-                        window.addToCart(product, quantity);
-                    } else {
-                        // Fallback si addToCart no está disponible
-                        // Siempre crear un nuevo item (permitir duplicados)
-                        const cart = JSON.parse(localStorage.getItem('eppo_cart') || '[]');
-                        
-                        const currentLang = localStorage.getItem('language') || 'pt';
-                        const description = currentLang === 'es' ? 
-                            (product.descripcionEs || product.descripcion_es || '') :
-                            (product.descripcionPt || product.descripcion_pt || product.descripcionEs || product.descripcion_es || '');
-                        
-                        const priceTiers = product.price_tiers || [];
-                        const initialPrice = priceTiers.length > 0 && window.cartManager ? 
-                            window.cartManager.getPriceForQuantity(priceTiers, quantity, product.precio).price : 
-                            product.precio;
-                        
-                        // Siempre crear un nuevo item (permitir duplicados)
-                        // Generar un ID único para este item del carrito
-                        const cartItemId = `cart-item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-                        
-                        cart.push({
-                            id: product.id,
-                            cartItemId: cartItemId, // ID único para identificar este item específico en el carrito
-                            type: 'product',
-                            name: product.nombre,
-                            category: product.categoria,
-                            price: initialPrice,
-                            basePrice: product.precio,
-                            image: product.foto,
-                            quantity: quantity,
-                            descripcionEs: product.descripcionEs || product.descripcion_es || '',
-                            descripcionPt: product.descripcionPt || product.descripcion_pt || '',
-                            description: description,
-                            referencia: product.id ? String(product.id) : '',
-                            plazoEntrega: product.plazoEntrega || product.plazo_entrega || '',
-                            price_tiers: priceTiers,
-                            box_size: product.box_size || null,
-                            phc_ref: product.phc_ref || null,
-                            observations: ''
-                        });
-                        
-                        localStorage.setItem('eppo_cart', JSON.stringify(cart));
-                    }
-                } catch (error) {
-                }
-            };
-            
-            // Event listeners
-            confirmBtn.addEventListener('click', confirmAdd);
-            cancelBtn.addEventListener('click', closeModal);
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal();
-            });
-            
-            // Enter para confirmar
-            quantityInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    confirmAdd();
-                }
-            });
-            
-            // Focus en el input
-            quantityInput.focus();
-            quantityInput.select();
-        }
-        
-        // Hacer función global
-        window.askQuantityAndAddToCart = askQuantityAndAddToCart;
-    </script>
     
     <script>
         // Función para manejar el cambio de tema
@@ -592,9 +183,10 @@
                     type: 'Tipo',
                     technology: 'Tecnologia',
                     secadores: 'Secadores',
-                    planchas: 'Passar a ferro',
-                    tablasplanchar: 'Tábuas de passar',
+                    ironing: 'Passar a ferro',
                     portamaletas: 'Porta-malas',
+                    clearFilters: 'Limpar Filtros',
+                    applyFilters: 'Aplicar Filtros',
                     upTo: 'Até'
                 },
                 es: {
@@ -606,9 +198,10 @@
                     type: 'Tipo',
                     technology: 'Tecnología',
                     secadores: 'Secadores',
-                    planchas: 'Planchas',
-                    tablasplanchar: 'Tablas de planchar',
+                    ironing: 'Planchado',
                     portamaletas: 'Portamaletas',
+                    clearFilters: 'Limpiar Filtros',
+                    applyFilters: 'Aplicar Filtros',
                     upTo: 'Hasta'
                 },
                 en: {
@@ -620,9 +213,10 @@
                     type: 'Type',
                     technology: 'Technology',
                     secadores: 'Hair Dryers',
-                    planchas: 'Irons',
-                    tablasplanchar: 'Ironing Boards',
+                    ironing: 'Ironing',
                     portamaletas: 'Luggage Racks',
+                    clearFilters: 'Clear Filters',
+                    applyFilters: 'Apply Filters',
                     upTo: 'Up to'
                 }
             };
@@ -639,8 +233,7 @@
                 'type-title': t.type,
                 'technology-title': t.technology,
                 'secadores-label': t.secadores,
-                'planchas-label': t.planchas,
-                'tablas-planchar-label': t.tablasplanchar,
+                'ironing-label': t.ironing,
                 'porta-malas-label': t.portamaletas
             };
 
@@ -652,10 +245,11 @@
                 }
             });
 
-            // Los botones de filtros fueron eliminados - los filtros se aplican automáticamente
-            
-            // Actualizar botones de navegación
-            updateNavigationButtons(lang);
+            // Traducir botones
+            const clearButton = document.getElementById('clearFilters');
+            const applyButton = document.getElementById('applyFilters');
+            if (clearButton) clearButton.textContent = t.clearFilters;
+            if (applyButton) applyButton.textContent = t.applyFilters;
 
             // Traducir valor del precio
             const priceValue = document.getElementById('priceValue');
@@ -663,32 +257,6 @@
                 const currentValue = document.getElementById('priceSlider')?.value || '200';
                 priceValue.textContent = `${t.upTo} €${currentValue}`;
             }
-        }
-        
-        // Función para actualizar botones de navegación
-        function updateNavigationButtons(lang) {
-            const navTranslations = {
-                pt: {
-                    budget: 'Orçamento',
-                    createProduct: 'Criador/Editor'
-                },
-                es: {
-                    budget: 'Presupuesto',
-                    createProduct: 'Creador/Editor'
-                },
-                en: {
-                    budget: 'Budget',
-                    createProduct: 'Creator/Editor'
-                }
-            };
-            
-            const t = navTranslations[lang] || navTranslations.pt;
-            
-            const cartLink = document.getElementById('nav-cart-link');
-            const createProductLink = document.getElementById('create-product-text');
-            
-            if (cartLink) cartLink.textContent = t.budget;
-            if (createProductLink) createProductLink.textContent = t.createProduct;
         }
 
         // Función para cambiar idioma
@@ -717,13 +285,7 @@
         }
 
         // Event listeners
-        document.addEventListener('DOMContentLoaded', async function() {
-            // Verificar autenticación primero
-            const isAuth = await window.authManager.requireAuth('login.html');
-            if (!isAuth) {
-                return; // Redirige a login.html
-            }
-
+        document.addEventListener('DOMContentLoaded', function() {
             initTheme();
             
             const toggleButton = document.getElementById('theme-toggle');
@@ -744,10 +306,6 @@
             }
         });
     </script>
-    <script>
-    </script>
-    <script src="menu-hamburguesa.js"></script>
-    <script src="theme-common.js"></script>
 </body>
 </html>
 

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Supabase</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Debug Supabase</h1>
+    <div id="debug-info"></div>
+    
+    <script>
+        async function debugSupabase() {
+            const debugDiv = document.getElementById('debug-info');
+            
+            try {
+                // Configuración de Supabase
+                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
+                
+                debugDiv.innerHTML += '<p>🔄 Inicializando Supabase...</p>';
+                
+                // Verificar que supabase esté disponible
+                if (typeof supabase === 'undefined') {
+                    throw new Error('Supabase no está disponible. Verifica que el script esté cargado.');
+                }
+                
+                const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                debugDiv.innerHTML += '<p>✅ Cliente Supabase creado</p>';
+                
+                // Probar conexión con tabla secadores
+                debugDiv.innerHTML += '<p>🔄 Probando conexión con tabla secadores...</p>';
+                const { data: secadores, error: errorSecadores } = await supabaseClient
+                    .from('secadores')
+                    .select('*')
+                    .limit(5);
+                
+                if (errorSecadores) {
+                    debugDiv.innerHTML += `<p>❌ Error en secadores: ${errorSecadores.message}</p>`;
+                } else {
+                    debugDiv.innerHTML += `<p>✅ Secadores cargados: ${secadores?.length || 0} productos</p>`;
+                    if (secadores && secadores.length > 0) {
+                        debugDiv.innerHTML += `<p>📦 Primer producto: ${secadores[0].nombre}</p>`;
+                    }
+                }
+                
+                // Probar conexión con tabla ironing
+                debugDiv.innerHTML += '<p>🔄 Probando conexión con tabla ironing...</p>';
+                const { data: ironing, error: errorIroning } = await supabaseClient
+                    .from('ironing')
+                    .select('*')
+                    .limit(5);
+                
+                if (errorIroning) {
+                    debugDiv.innerHTML += `<p>❌ Error en ironing: ${errorIroning.message}</p>`;
+                } else {
+                    debugDiv.innerHTML += `<p>✅ Ironing cargados: ${ironing?.length || 0} productos</p>`;
+                }
+                
+                // Probar conexión con tabla porta_malas
+                debugDiv.innerHTML += '<p>🔄 Probando conexión con tabla porta_malas...</p>';
+                const { data: portaMalas, error: errorPortaMalas } = await supabaseClient
+                    .from('porta_malas')
+                    .select('*')
+                    .limit(5);
+                
+                if (errorPortaMalas) {
+                    debugDiv.innerHTML += `<p>❌ Error en porta_malas: ${errorPortaMalas.message}</p>`;
+                } else {
+                    debugDiv.innerHTML += `<p>✅ Porta malas cargados: ${portaMalas?.length || 0} productos</p>`;
+                }
+                
+                debugDiv.innerHTML += '<p>✅ Debug completado</p>';
+                
+            } catch (error) {
+                debugDiv.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+                console.error('Error en debug:', error);
+            }
+        }
+        
+        // Ejecutar debug cuando se carga la página
+        document.addEventListener('DOMContentLoaded', debugSupabase);
+    </script>
+</body>
+</html>
+
+

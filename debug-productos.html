@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Productos</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Debug Productos</h1>
+        <div id="debug-info"></div>
+        <div class="products-grid" id="products-grid">
+            <!-- Productos aquí -->
+        </div>
+    </div>
+
+    <script>
+        async function debugProductos() {
+            const debugInfo = document.getElementById('debug-info');
+            const productsGrid = document.getElementById('products-grid');
+            
+            try {
+                // Configuración de Supabase
+                const SUPABASE_URL = 'https://fzlvsgjvilompkjmqeoj.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY';
+                
+                const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase inicializado');
+                
+                // Cargar productos
+                const { data: secadores, error } = await supabase
+                    .from('secadores')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                console.log('📊 Datos de secadores:', secadores);
+                console.log('❌ Error:', error);
+                
+                if (error) {
+                    debugInfo.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                    return;
+                }
+                
+                if (!secadores || secadores.length === 0) {
+                    debugInfo.innerHTML = '<p style="color: orange;">No hay productos en la tabla secadores</p>';
+                    return;
+                }
+                
+                debugInfo.innerHTML = `<p style="color: green;">✅ ${secadores.length} productos cargados</p>`;
+                
+                // Mostrar productos
+                const productsHtml = secadores.map(product => `
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="${product.foto}" alt="${product.nombre}" onerror="this.src='secador.png'">
+                        </div>
+                        <div class="product-info">
+                            <h3>${product.nombre}</h3>
+                            <p>Precio: €${product.precio}</p>
+                            <p>Potencia: ${product.potencia}W</p>
+                            <p>Color: ${product.color}</p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                productsGrid.innerHTML = productsHtml;
+                console.log('✅ Productos mostrados');
+                
+            } catch (err) {
+                console.error('❌ Error general:', err);
+                debugInfo.innerHTML = `<p style="color: red;">Error general: ${err.message}</p>`;
+            }
+        }
+        
+        // Ejecutar cuando se carga la página
+        document.addEventListener('DOMContentLoaded', debugProductos);
+    </script>
+</body>
+</html>
+
+
+

@@ -1,93 +1,50 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPPO by Groupe GM - Crear Producto</title>
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="menu-hamburguesa.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Crear Producto</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="supabase-config-universal.js"></script>
-    <script src="translation-system.js"></script>
-    <script src="auth.js"></script>
-    <script src="stock-warning.js"></script>
     <style>
-        .product-form-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: var(--space-8) var(--space-6);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-
-        .product-form-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--space-8);
-            padding-bottom: var(--space-4);
-            border-bottom: 2px solid var(--bg-gray-200);
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f4f6fb;
+            padding: 20px;
         }
-
-        .product-form-title {
-            font-family: var(--font-display);
-            font-size: 2.5rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .product-form-subtitle {
-            color: var(--text-secondary);
-            margin-top: var(--space-2);
-        }
-
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            background: var(--bg-white);
-            border-radius: var(--radius-xl);
-            padding: var(--space-8);
-            box-shadow: var(--shadow-md);
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-
+        h1 {
+            color: #1d3557;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
         .form-section {
-            background: var(--bg-gray-50);
-            padding: var(--space-6);
-            border-radius: var(--radius-lg);
-            margin-bottom: var(--space-6);
-            border: 1px solid var(--bg-gray-200);
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
-
         .form-section h2 {
-            font-family: var(--font-display);
-            color: var(--text-primary);
-            margin-bottom: var(--space-4);
-            font-size: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 2px solid var(--bg-gray-200);
-            position: relative;
-        }
-        .form-section h2::before {
-            content: '';
-            display: inline-block;
-            width: 4px;
-            height: 1.5rem;
-            background: var(--primary-color, #1d3557);
-            margin-right: 0.75rem;
-            vertical-align: middle;
-        }
-        .required {
-            font-weight: 600;
-        }
-        .required span {
-            color: #ef4444;
-            margin-left: 4px;
-        }
-            font-weight: 600;
+            color: #1d3557;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
         }
         .form-grid {
             display: grid;
@@ -104,32 +61,26 @@
         }
         label {
             font-weight: 600;
-            margin-bottom: var(--space-2);
-            color: var(--text-primary);
-            font-size: 0.875rem;
+            margin-bottom: 5px;
+            color: #1d3557;
         }
         label.required::after {
             content: ' *';
             color: #ef4444;
-            font-weight: bold;
-        }
-        .required {
-            font-weight: 600;
         }
         input, select, textarea {
-            padding: var(--space-3) var(--space-4);
-            border: 1px solid var(--bg-gray-300);
-            border-radius: var(--radius-md);
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
             font-family: inherit;
-            font-size: 0.9375rem;
-            color: var(--text-primary);
-            background: var(--bg-white);
-            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #1d3557;
+            background: white;
         }
         input:focus, select:focus, textarea:focus {
             outline: none;
-            border-color: var(--primary-500);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            border-color: #1d3557;
+            box-shadow: 0 0 0 3px rgba(29, 53, 87, 0.1);
         }
         textarea {
             min-height: 100px;
@@ -145,87 +96,80 @@
             display: none !important;
         }
         .variant-section {
-            background: var(--bg-white);
-            padding: var(--space-6);
-            border-radius: var(--radius-lg);
-            margin-bottom: var(--space-6);
-            border: 2px solid var(--bg-gray-200);
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #e5e7eb;
         }
         .variant-header {
             display: flex;
             align-items: center;
-            margin-bottom: var(--space-4);
-            padding-bottom: var(--space-4);
-            border-bottom: 1px solid var(--bg-gray-200);
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
         }
         .variant-header h3 {
             margin: 0;
-            color: var(--text-primary);
-            font-size: 1.25rem;
-            font-weight: 600;
+            color: #1d3557;
+            font-size: 1.1rem;
         }
         .price-tiers-container {
-            margin-bottom: var(--space-4);
+            margin-bottom: 10px;
         }
         .price-tier {
-            background: var(--bg-white);
-            padding: var(--space-4);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-3);
-            border: 1px solid var(--bg-gray-200);
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #e5e7eb;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr auto;
-            gap: var(--space-3);
+            gap: 10px;
             align-items: center;
         }
         .price-tier input {
             width: 100%;
         }
         .btn {
-            padding: var(--space-3) var(--space-6);
+            padding: 12px 24px;
             border: none;
-            border-radius: var(--radius-md);
+            border-radius: 6px;
             font-weight: 600;
             cursor: pointer;
-            font-size: 0.9375rem;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-2);
+            font-size: 14px;
+            transition: all 0.2s;
         }
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
-            color: var(--text-white);
+            background: #1d3557;
+            color: white;
         }
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+            background: #152742;
         }
         .btn-secondary {
-            background: var(--bg-gray-200);
-            color: var(--text-primary);
+            background: #e5e7eb;
+            color: #374151;
         }
         .btn-secondary:hover {
-            background: var(--bg-gray-300);
+            background: #d1d5db;
         }
         .btn-danger {
-            background: linear-gradient(135deg, var(--danger-500) 0%, #dc2626 100%);
-            color: var(--text-white);
-            padding: var(--space-2) var(--space-4);
-            font-size: 0.875rem;
+            background: #ef4444;
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
         }
         .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            background: #dc2626;
         }
         .btn-add {
-            background: linear-gradient(135deg, var(--success-500) 0%, #059669 100%);
-            color: var(--text-white);
-            margin-top: var(--space-3);
+            background: #10b981;
+            color: white;
+            margin-top: 10px;
         }
         .btn-add:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            background: #059669;
         }
         .alert {
             padding: 15px;
@@ -281,60 +225,53 @@
             justify-content: center;
         }
         .modal-content {
-            background: var(--bg-white);
-            color: var(--text-primary);
-            padding: var(--space-8);
-            border-radius: var(--radius-xl);
+            background: white;
+            color: #1d3557;
+            padding: 30px;
+            border-radius: 12px;
             max-width: 900px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
-            box-shadow: var(--shadow-xl);
         }
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: var(--space-6);
-            padding-bottom: var(--space-4);
-            border-bottom: 2px solid var(--bg-gray-200);
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
         }
         .modal-header h2 {
             margin: 0;
-            color: var(--text-primary);
-            font-family: var(--font-display);
-            font-size: 1.5rem;
+            color: #1d3557;
         }
         .close-modal {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 24px;
             cursor: pointer;
-            color: var(--text-secondary);
-            transition: all 0.2s ease;
+            color: #6b7280;
         }
         .close-modal:hover {
-            color: var(--text-primary);
-            background: var(--bg-gray-100);
-            border-radius: var(--radius-md);
+            color: #1d3557;
         }
         .category-list {
-            margin-bottom: var(--space-8);
+            margin-bottom: 30px;
         }
         .category-item {
-            background: var(--bg-gray-50);
-            padding: var(--space-4);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-3);
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid var(--bg-gray-200);
         }
         .category-item-name {
             font-weight: 600;
-            color: var(--text-primary);
+            color: #1d3557;
         }
         .category-item-actions {
             display: flex;
@@ -362,147 +299,26 @@
         .field-row input, .field-row select {
             width: 100%;
         }
-        .alert {
-            padding: var(--space-4);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-4);
-        }
-        .alert-success {
-            background: var(--success-100, #d1fae5);
-            color: var(--success-700, #065f46);
-            border: 1px solid var(--success-300, #6ee7b7);
-        }
-        .alert-error {
-            background: var(--danger-100, #fee2e2);
-            color: var(--danger-700, #991b1b);
-            border: 1px solid var(--danger-300, #fca5a5);
-        }
-        .alert-warning {
-            background: var(--warning-100, #fef3c7);
-            color: var(--warning-700, #92400e);
-            border: 1px solid var(--warning-300, #fde68a);
-        }
-        .actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: var(--space-8);
-            padding-top: var(--space-6);
-            border-top: 1px solid var(--bg-gray-200);
-            gap: var(--space-4);
-        }
-        .header-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--space-6);
-        }
-        .field-editor {
-            background: var(--bg-gray-50);
-            padding: var(--space-4);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-4);
-        }
-        .field-editor-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--space-3);
-        }
-        .field-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr auto;
-            gap: var(--space-3);
-            align-items: end;
-            margin-bottom: var(--space-3);
-        }
-        .field-row input, .field-row select {
-            width: 100%;
-        }
-        @media (max-width: 768px) {
-            .form-grid, .category-fields {
-                grid-template-columns: 1fr;
-            }
-            .price-tier {
-                grid-template-columns: 1fr;
-            }
-            .actions {
-                flex-direction: column;
-            }
-            .product-form-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">
-                <span>EPPO by <span class="groupe-gm">Groupe GM</span></span>
+    <div class="container">
+        <div class="header-actions">
+            <div>
+                <h1 id="page-title">Crear Nuevo Producto</h1>
+                <p class="subtitle" id="page-subtitle">Completa la información del producto según su categoría</p>
             </div>
-            <nav class="nav">
-                <a href="index.html" class="nav-link">Home</a>
-                <a href="productos-dinamico.html" class="nav-link">Products</a>
-                
-                <!-- Menú hamburguesa -->
-                <div class="menu-dropdown">
-                    <button class="menu-toggle" id="menuToggle" onclick="toggleMenu()" aria-label="Toggle menu">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div class="dropdown-menu" id="dropdownMenu">
-                        <a href="comparar-productos.html" class="dropdown-link">
-                            <i class="fas fa-balance-scale"></i>
-                            <span>Comparar</span>
-                        </a>
-                        <a href="carrito-compras.html" class="dropdown-link" id="nav-cart-link">
-                            <i class="fas fa-shopping-cart"></i>
-                            <span>Presupuesto</span>
-                        </a>
-                        <a href="consultar-propuestas.html" class="dropdown-link" id="nav-proposals-link">
-                            <i class="fas fa-file-invoice"></i>
-                            <span>Propuestas</span>
-                        </a>
-                        <a href="selector-productos.html" class="dropdown-link" id="nav-create-product-link">
-                            <i class="fas fa-edit"></i>
-                            <span id="create-product-text">Creador/Editor</span>
-                        </a>
-                    </div>
-                </div>
-                
-                <div class="language-selector">
-                    <button class="flag-btn active" data-lang="pt" title="Português" onclick="changeLanguage('pt')">
-                        <img src="https://flagcdn.com/w20/pt.png" alt="Portugal">
-                    </button>
-                    <button class="flag-btn" data-lang="es" title="Español" onclick="changeLanguage('es')">
-                        <img src="https://flagcdn.com/w20/es.png" alt="España">
-                    </button>
-                    <button class="flag-btn" data-lang="en" title="English" onclick="changeLanguage('en')">
-                        <img src="https://flagcdn.com/w20/gb.png" alt="Reino Unido">
-                    </button>
-                </div>
-                
-                <button class="theme-toggle" id="theme-toggle" title="Cambiar tema">
-                    <i class="fas fa-sun sun-icon"></i>
-                    <i class="fas fa-moon moon-icon"></i>
-                </button>
-            </nav>
+            <div style="display: flex; gap: 10px;">
+                <a href="selector-productos.html" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> <span id="back-text">Volver</span>
+                </a>
+                <a href="productos-dinamico.html" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> <span id="catalog-text">Catálogo</span>
+                </a>
+            </div>
         </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="product-form-container">
-            <div class="product-form-header">
-                <div>
-                    <h1 class="product-form-title" id="page-title">Crear Nuevo Producto</h1>
-                    <p class="product-form-subtitle" id="page-subtitle">Completa la información del producto según su categoría</p>
-                </div>
-            </div>
-
-            <div class="container">
-                <div id="alert-container"></div>
+        <div id="alert-container"></div>
 
         <!-- Selector de modo (solo para editar o duplicar) -->
         <div id="mode-selector" style="display: none; margin-bottom: 20px;">
@@ -520,56 +336,32 @@
             <div class="form-section">
                 <h2>Información Básica</h2>
                 <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label for="modelo" class="required">Nombre del Producto <span style="color: #ef4444;">*</span></label>
-                        <input type="text" id="modelo" name="modelo" placeholder="Ej. Secador Premium 5400" required>
-                    </div>
                     <div class="form-group">
                         <label for="marca">Marca</label>
                         <input type="text" id="marca" name="marca" placeholder="Ej. VALERA" list="marcas">
                     </div>
                     <datalist id="marcas"></datalist>
                     <div class="form-group">
-                        <label for="categoria" class="required">Categoría <span style="color: #ef4444;">*</span></label>
+                        <label for="categoria" class="required">Categoría</label>
                         <select id="categoria" name="categoria" required>
                             <option value="">Cargando categorías...</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="mercado" class="required">Mercado <span style="color: #ef4444;">*</span></label>
-                        <select id="mercado" name="mercado" required>
-                            <option value="">Selecciona un mercado...</option>
-                            <option value="PT">Portugal (PT)</option>
-                            <option value="ES">España (ES)</option>
-                            <option value="AMBOS">Ambos (PT y ES)</option>
+                        <label for="badgeEs">Etiqueta Destacada (Español)</label>
+                        <select id="badgeEs" name="badgeEs">
+                            <option value="">Sin etiqueta</option>
+                            <option value="NEW">New</option>
+                            <option value="PROMOCION">Promoción</option>
                         </select>
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Selecciona para qué mercado(s) está disponible este producto
-                        </small>
                     </div>
                     <div class="form-group">
-                        <label for="badge">Etiqueta Destacada</label>
-                        <select id="badge" name="badge">
+                        <label for="badgePt">Etiqueta Destacada (Português)</label>
+                        <select id="badgePt" name="badgePt">
                             <option value="">Sem etiqueta</option>
-                            <option value="NEW">Novo</option>
-                            <option value="PROMOCION">Promoção</option>
-                            <option value="STOCK_LIMITADO">Stock limitado</option>
+                            <option value="NEW">New</option>
+                            <option value="PROMOCAO">Promoção</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="clienteSelect">Cliente Específico (Opcional)</label>
-                        <div style="position: relative;">
-                            <input type="text" id="clienteSelect" name="clienteSelect" 
-                                   placeholder="Buscar cliente..." 
-                                   autocomplete="off"
-                                   style="width: 100%; padding: 10px; border: 1px solid var(--bg-gray-300); border-radius: 6px; background: var(--bg-white); color: var(--text-primary);">
-                            <div id="clienteSuggestions" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-white); border: 1px solid var(--bg-gray-300); border-radius: 6px; max-height: 200px; overflow-y: auto; z-index: 1000; margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                            </div>
-                        </div>
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Si seleccionas un cliente, este producto solo aparecerá en propuestas de ese cliente
-                        </small>
-                        <input type="hidden" id="clienteId" name="clienteId" value="">
                     </div>
                     <div class="form-group full-width" style="margin-top: 10px;">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
@@ -587,22 +379,26 @@
             <div class="form-section">
                 <h2>Descripciones</h2>
                 <div class="form-grid">
-                    <div class="form-group full-width" id="descripcionEsContainer">
-                        <label for="descripcionEs" class="required">Descripción (Español) <span style="color: #ef4444;">*</span></label>
+                    <div class="form-group full-width">
+                        <label for="modelo" class="required">Nombre del Producto</label>
+                        <input type="text" id="modelo" name="modelo" placeholder="Ej. Secador Premium 5400" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="descripcionEs" class="required">Descripción (Español)</label>
                         <textarea id="descripcionEs" name="descripcionEs" placeholder="Describe el producto en español" required></textarea>
                     </div>
-                    <div class="form-group full-width" id="descripcionPtContainer" style="display: none; width: 100%;">
-                        <label for="descripcionPt" class="required">Descrição (Português) <span style="color: #ef4444;">*</span></label>
-                        <textarea id="descripcionPt" name="descripcionPt" placeholder="Descreva o produto em português" required style="width: 100%; min-height: 100px;"></textarea>
+                    <div class="form-group full-width">
+                        <label for="descripcionPt">Descrição (Português)</label>
+                        <textarea id="descripcionPt" name="descripcionPt" placeholder="Descreva o produto em português"></textarea>
                     </div>
                 </div>
             </div>
 
             <!-- Campos Específicos de Categoría (Filtros) -->
-            <div class="form-section" id="categoryFieldsSection" style="display: none;">
-                <h2 id="categoryFieldsTitle">Campos de la Categoría</h2>
+            <div class="form-section">
+                <h2 id="categoryFieldsTitle">Filtros</h2>
                 <div id="categoryFields" class="category-fields">
-                    <p style="color: #6b7280; grid-column: 1 / -1;">Cargando campos de la categoría...</p>
+                    <p style="color: #6b7280; grid-column: 1 / -1;">Selecciona una categoría para ver los filtros disponibles</p>
                 </div>
             </div>
 
@@ -611,33 +407,12 @@
                 <h2>Multimedia</h2>
                 <div class="form-grid">
                     <div class="form-group full-width">
-                        <label for="foto" class="required">Imagen Principal <span style="color: #ef4444;">*</span></label>
-                        <input type="file" id="foto" name="foto" accept="image/*" onchange="handleImageFileChange('foto')" style="margin-bottom: 10px;">
-                        <input type="hidden" id="fotoRequired" value="true">
-                        <div id="fotoPreview" style="margin-top: 10px; display: none;">
-                            <img id="fotoPreviewImg" src="" alt="Vista previa" style="max-width: 300px; max-height: 300px; border-radius: 8px; border: 2px solid #d1d5db;">
-                            <button type="button" onclick="removeImagePreview('foto')" style="margin-top: 10px; padding: 5px 15px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                                <i class="fas fa-times"></i> Eliminar
-                            </button>
-                        </div>
-                        <input type="hidden" id="fotoUrl" name="fotoUrl">
-                        <small style="color: #6b7280; display: block; margin-top: 5px;">
-                            <i class="fas fa-info-circle"></i> Selecciona una imagen desde tu PC. Se subirá automáticamente a Supabase.
-                        </small>
+                        <label for="foto" class="required">URL Imagen Principal</label>
+                        <input type="url" id="foto" name="foto" placeholder="https://..." required>
                     </div>
                     <div class="form-group full-width">
-                        <label for="foto2">Imagen Secundaria</label>
-                        <input type="file" id="foto2" name="foto2" accept="image/*" onchange="handleImageFileChange('foto2')" style="margin-bottom: 10px;">
-                        <div id="foto2Preview" style="margin-top: 10px; display: none;">
-                            <img id="foto2PreviewImg" src="" alt="Vista previa" style="max-width: 300px; max-height: 300px; border-radius: 8px; border: 2px solid #d1d5db;">
-                            <button type="button" onclick="removeImagePreview('foto2')" style="margin-top: 10px; padding: 5px 15px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                                <i class="fas fa-times"></i> Eliminar
-                            </button>
-                        </div>
-                        <input type="hidden" id="foto2Url" name="foto2Url">
-                        <small style="color: #6b7280; display: block; margin-top: 5px;">
-                            <i class="fas fa-info-circle"></i> Opcional: Segunda imagen del producto.
-                        </small>
+                        <label for="foto2">URL Imagen Secundaria</label>
+                        <input type="url" id="foto2" name="foto2" placeholder="https://...">
                     </div>
                     <div class="form-group">
                         <label for="fichaTecnica">URL Ficha Técnica</label>
@@ -646,112 +421,20 @@
                 </div>
             </div>
 
-            <!-- Especificaciones del Producto -->
+            <!-- Plazo de Entrega -->
             <div class="form-section">
-                <h2>Especificaciones del Producto</h2>
+                <h2>Plazo de Entrega</h2>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="plazoEntrega" class="required">Plazo de Entrega <span style="color: #ef4444;">*</span></label>
+                        <label for="plazoEntrega" class="required">Plazo de Entrega</label>
                         <input type="text" id="plazoEntrega" name="plazoEntrega" placeholder="Ej: 15-20 días, 2-3 semanas, Inmediato" required>
                     </div>
-                    <div class="form-group">
-                        <label for="peso" class="required">Peso (kg) <span style="color: #ef4444;">*</span></label>
-                        <input type="number" id="peso" name="peso" step="0.01" min="0" placeholder="Ej: 2.50" required>
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Peso del producto en kilogramos
-                        </small>
-                    </div>
-                    <div class="form-group">
-                        <label for="boxSize">Cantidad por Caja</label>
-                        <input type="number" id="boxSize" name="boxSize" min="1" placeholder="Ej: 48">
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Si se especifica, el producto solo se podrá comprar en múltiplos de esta cantidad (48, 96, 144, etc.). Dejar vacío para permitir cualquier cantidad.
-                        </small>
-                    </div>
-                    <div class="form-group full-width">
-                        <label id="zones-label">Zonas donde funciona el producto</label>
-                        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <input type="checkbox" id="zonaHabitacion" name="zonas" value="habitacion" style="width: 20px; height: 20px; cursor: pointer;">
-                                <span>Habitación</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <input type="checkbox" id="zonaBano" name="zonas" value="bano" style="width: 20px; height: 20px; cursor: pointer;">
-                                <span>Baño</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <input type="checkbox" id="zonaComunes" name="zonas" value="zonas_comunes" style="width: 20px; height: 20px; cursor: pointer;">
-                                <span>Zonas Comunes</span>
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                                <input type="checkbox" id="zonaRestaurantes" name="zonas" value="restaurantes" style="width: 20px; height: 20px; cursor: pointer;">
-                                <span>Restaurantes</span>
-                            </label>
-                        </div>
-                        <small style="color: #6b7280; margin-top: 10px; display: block;">
-                            Selecciona una o más zonas donde puede utilizarse este producto. Por ejemplo, un secador puede funcionar tanto en el baño como en la habitación.
-                        </small>
-                    </div>
                 </div>
             </div>
 
-            <!-- Referencias y Proveedores -->
+            <!-- Variantes y Precios -->
             <div class="form-section">
-                <h2>Referencias y Proveedores</h2>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="phcRef">Referencia PHC</label>
-                        <input type="text" id="phcRef" name="phcRef" placeholder="Ej: PHC-12345">
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Referencia opcional del producto en el sistema PHC
-                        </small>
-                    </div>
-                    <div class="form-group">
-                        <label for="nombreFornecedor">Nombre de Fornecedor</label>
-                        <input type="text" id="nombreFornecedor" name="nombreFornecedor" placeholder="Ej: Fornecedor ABC">
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Nombre del fornecedor/proveedor del producto (opcional)
-                        </small>
-                    </div>
-                    <div class="form-group">
-                        <label for="referenciaFornecedor">Referencia Fornecedor</label>
-                        <input type="text" id="referenciaFornecedor" name="referenciaFornecedor" placeholder="Ej: FORN-001">
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Referencia del producto en el sistema del fornecedor (opcional)
-                        </small>
-                    </div>
-                    <div class="form-group full-width">
-                        <label for="areaNegocio" class="required">Área de Negocio <span style="color: #ef4444;">*</span></label>
-                        <select id="areaNegocio" name="areaNegocio" required>
-                            <option value="">Selecciona un área de negocio...</option>
-                            <option value="accesorios_personalizados">Accesorios Personalizados</option>
-                            <option value="cosmetica_personalizada">Cosmética Personalizada</option>
-                            <option value="equipamiento">Equipamiento</option>
-                        </select>
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">
-                            Área de negocio del producto (obligatorio)
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Referencias y Colores -->
-            <div class="form-section">
-                <h2>Referencias y Colores</h2>
-                <div id="variantesReferenciasContainer">
-                    <!-- Se llenará dinámicamente -->
-                </div>
-                <button type="button" class="btn btn-add" onclick="addVarianteReferencia()" style="margin-top: 15px;">
-                    <i class="fas fa-plus"></i> Agregar Variante de Referencia
-                </button>
-                <small style="color: #6b7280; margin-top: 10px; display: block;">
-                    Agrega variantes de referencias para diferentes colores o versiones del producto (opcional)
-                </small>
-            </div>
-
-            <!-- Precios y Variantes -->
-            <div class="form-section">
-                <h2>Precios y Variantes</h2>
+                <h2>Variantes y Precios</h2>
                 <div id="variantsContainer">
                     <!-- Variante Base (sin variante) -->
                     <div class="variant-section" data-variant-id="base">
@@ -779,18 +462,16 @@
                 <button type="button" id="deleteProductBtn" class="btn btn-danger" onclick="deleteProduct()" style="display: none;">
                     <i class="fas fa-trash"></i> <span id="delete-text">Eliminar Producto</span>
                 </button>
-                <button type="submit" id="saveProductBtn" class="btn btn-primary">
-                    <i class="fas fa-save"></i> <span id="saveProductBtnText">Guardar Producto</span>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Guardar Producto
                 </button>
             </div>
         </form>
-            </div>
-        </div>
-    </main>
+    </div>
 
     <!-- Modal para Gestionar Categorías del Home -->
-    <div id="homeCategoryModal" class="modal" onclick="handleModalOverlayClick(event)">
-        <div class="modal-content" style="max-width: 900px;" onclick="event.stopPropagation();">
+    <div id="homeCategoryModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h2>Categorías del Home</h2>
                 <button class="close-modal" onclick="closeHomeCategoryManager()">&times;</button>
@@ -995,18 +676,6 @@
                                         <span style="font-weight: 600; color: #1d3557; font-size: 0.9rem;">Campo obligatorio</span>
                                     </label>
                                 </div>
-                                
-                                <!-- Mostrar en filtros -->
-                                <div style="display: flex; align-items: center; padding-top: 32px;">
-                                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;">
-                                        <input type="checkbox" id="newFieldShowInFilters" checked
-                                               style="width: 22px; height: 22px; cursor: pointer; accent-color: #1d3557;">
-                                        <span style="font-weight: 600; color: #1d3557; font-size: 0.9rem;">Mostrar en filtros de búsqueda</span>
-                                    </label>
-                                    <small style="color: #64748b; font-size: 0.75rem; margin-top: 5px; display: block; width: 100%; margin-left: 34px; margin-top: 8px;">
-                                        Si está marcado, el campo aparecerá como filtro en la barra lateral. Si está desmarcado, solo será un atributo interno.
-                                    </small>
-                                </div>
                             </div>
                             
                             <!-- Opciones para Select -->
@@ -1162,14 +831,6 @@
                             </label>
                         </div>
                         <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="categoryFieldShowInFilters" checked> Mostrar en filtros de búsqueda
-                            </label>
-                            <small style="color: #6b7280; margin-top: 5px; display: block;">
-                                Si está marcado, el campo aparecerá como filtro en la barra lateral de búsqueda. Si está desmarcado, solo será un atributo interno del producto.
-                            </small>
-                        </div>
-                        <div class="form-group">
                             <label>Orden de Visualización</label>
                             <input type="number" id="categoryFieldOrden" value="0" min="0" placeholder="0 = primero">
                         </div>
@@ -1300,130 +961,5 @@
     </div>
 
     <script src="admin-productos.js"></script>
-    <script>
-        // Función para toggle del menú hamburguesa
-        function toggleMenu() {
-            const menu = document.getElementById('dropdownMenu');
-            if (menu) {
-                menu.classList.toggle('active');
-            }
-        }
-
-        // Cerrar menú al hacer clic fuera
-        document.addEventListener('click', function(e) {
-            const menu = document.getElementById('dropdownMenu');
-            const toggle = document.getElementById('menuToggle');
-            if (menu && toggle && !menu.contains(e.target) && !toggle.contains(e.target)) {
-                menu.classList.remove('active');
-            }
-        });
-
-        // Función para manejar el cambio de tema
-        function toggleTheme() {
-            const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            
-            // Actualizar el título del botón
-            const toggleButton = document.getElementById('theme-toggle');
-            if (toggleButton) {
-                toggleButton.setAttribute('title', newTheme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
-            }
-        }
-
-        // Función para inicializar el tema
-        function initTheme() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-            
-            document.documentElement.setAttribute('data-theme', theme);
-            
-            const toggleButton = document.getElementById('theme-toggle');
-            if (toggleButton) {
-                toggleButton.setAttribute('title', theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
-            }
-        }
-
-        // Inicializar sistema de traducciones y tema
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Verificar autenticación primero
-            const isAuth = await window.authManager.requireAuth('login.html');
-            if (!isAuth) {
-                return; // Redirige a login.html
-            }
-
-            // Inicializar tema
-            initTheme();
-            
-            const toggleButton = document.getElementById('theme-toggle');
-            if (toggleButton) {
-                toggleButton.addEventListener('click', toggleTheme);
-            }
-            
-            // Escuchar cambios en las preferencias del sistema
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-                if (!localStorage.getItem('theme')) {
-                    const theme = e.matches ? 'dark' : 'light';
-                    document.documentElement.setAttribute('data-theme', theme);
-                }
-            });
-            
-            // Cargar idioma guardado
-            const savedLang = localStorage.getItem('language') || 'pt';
-            if (window.translationSystem && window.translationSystem.changeLanguage) {
-                window.translationSystem.changeLanguage(savedLang);
-            }
-            // Actualizar traducciones del formulario
-            if (window.updateProductFormTranslations) {
-                window.updateProductFormTranslations();
-            }
-            
-            // Actualizar botones de idioma
-            document.querySelectorAll('.flag-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.lang === savedLang) {
-                    btn.classList.add('active');
-                }
-            });
-            
-            // Actualizar traducciones del formulario
-            if (window.updateProductFormTranslations) {
-                window.updateProductFormTranslations();
-            }
-        });
-        
-        // Sobrescribir función changeLanguage para actualizar traducciones
-        const originalChangeLanguage = window.changeLanguage;
-        window.changeLanguage = function(lang) {
-            if (originalChangeLanguage) {
-                originalChangeLanguage(lang);
-            }
-            if (window.translationSystem && window.translationSystem.changeLanguage) {
-                window.translationSystem.changeLanguage(lang);
-            }
-            
-            // Actualizar botones de idioma
-            document.querySelectorAll('.flag-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.lang === lang) {
-                    btn.classList.add('active');
-                }
-            });
-            
-            // Actualizar traducciones del formulario
-            if (window.updateProductFormTranslations) {
-                window.updateProductFormTranslations();
-            }
-            
-            // Actualizar traducciones del formulario
-            if (window.updateProductFormTranslations) {
-                window.updateProductFormTranslations();
-            }
-        };
-    </script>
 </body>
 </html>

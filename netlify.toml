@@ -1,0 +1,43 @@
+[build]
+  # Directorio de build (si usas un bundler)
+  publish = "dist"
+  
+  # Comando de build (si usas un bundler como Vite)
+  command = "npm run build"
+
+[build.environment]
+  # Variables de entorno para Supabase
+  VITE_SUPABASE_URL = "https://fzlvsgjvilompkjmqeoj.supabase.co"
+  VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6bHZzZ2p2aWxvbXBram1xZW9qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzNjQyODYsImV4cCI6MjA3Mzk0MDI4Nn0.KbH8qLOoWrVeXcTHelQNIzXoz0tutVGJHqkYw3GPFPY"
+
+# Headers para CORS y seguridad
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Permitir CORS para Supabase
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization, apikey"
+    
+    # Seguridad
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Redirecciones para SPA
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Configuración de funciones (si usas Netlify Functions)
+[functions]
+  directory = "netlify/functions"
+
+
+
+
+
+
+
