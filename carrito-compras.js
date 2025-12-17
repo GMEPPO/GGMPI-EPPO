@@ -874,6 +874,81 @@ class CartManager {
     }
 
     /**
+     * Formatear precio unitario: mostrar hasta 4 decimales si el precio tiene 4 decimales significativos
+     * @param {number|string} price - Precio a formatear (puede ser número o string para preservar decimales)
+     * @returns {string} - Precio formateado con el número correcto de decimales
+     */
+    formatUnitPrice(price) {
+        if (!price || price === 0) {
+            return '0.00';
+        }
+        
+        // Si es string, preservar los decimales originales
+        let priceStr = '';
+        if (typeof price === 'string') {
+            priceStr = price.trim();
+        } else {
+            // Si es número, usar toFixed(6) para capturar todos los decimales posibles
+            priceStr = Number(price).toFixed(6);
+        }
+        
+        const numPrice = Number(price);
+        if (isNaN(numPrice)) {
+            return '0.00';
+        }
+        
+        // Verificar si el string original tiene decimales
+        const decimalIndex = priceStr.indexOf('.');
+        if (decimalIndex === -1) {
+            // No tiene decimales, mostrar 2
+            return numPrice.toFixed(2);
+        }
+        
+        // Obtener la parte decimal del string original
+        const decimalPart = priceStr.substring(decimalIndex + 1);
+        // Eliminar ceros finales para contar solo decimales significativos
+        const significantDecimals = decimalPart.replace(/0+$/, '');
+        
+        // Si tiene 3 o 4 decimales significativos, mostrar hasta 4
+        if (significantDecimals.length >= 3 && significantDecimals.length <= 4) {
+            // Mostrar hasta 4 decimales, eliminando ceros finales innecesarios
+            const formatted = numPrice.toFixed(4);
+            const parts = formatted.split('.');
+            if (parts.length === 2) {
+                const decimals = parts[1].replace(/0+$/, '');
+                // Si después de eliminar ceros quedan menos de 2 decimales, usar 2
+                if (decimals.length < 2) {
+                    return numPrice.toFixed(2);
+                }
+                // Si quedan 2, 3 o 4 decimales, mostrarlos
+                return parts[0] + '.' + decimals;
+            }
+            return formatted;
+        } else {
+            // Mostrar 2 decimales
+            return numPrice.toFixed(2);
+        }
+    }
+
+    /**
+     * Formatear total: siempre mostrar 2 decimales
+     * @param {number} total - Total a formatear
+     * @returns {string} - Total formateado con 2 decimales
+     */
+    formatTotal(total) {
+        if (!total || total === 0) {
+            return '0.00';
+        }
+        
+        const numTotal = Number(total);
+        if (isNaN(numTotal)) {
+            return '0.00';
+        }
+        
+        return numTotal.toFixed(2);
+    }
+
+    /**
      * Guardar carrito en localStorage
      */
     saveCart() {
@@ -1884,7 +1959,7 @@ class CartManager {
                                 `Minimum quantity: ${minQuantity}`
                             }
                         </div>` :
-                        `<div class="cart-item-total" style="cursor: pointer; transition: opacity 0.2s;" onclick="showPriceTiersModal('${String(itemIdentifier).replace(/'/g, "\\'")}', '${productName.replace(/'/g, "\\'")}')" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">€${unitPrice > 0 ? unitPrice.toFixed(2) : '0.00'}</div>`
+                        `<div class="cart-item-total" style="cursor: pointer; transition: opacity 0.2s;" onclick="showPriceTiersModal('${String(itemIdentifier).replace(/'/g, "\\'")}', '${productName.replace(/'/g, "\\'")}')" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">€${this.formatUnitPrice(unitPrice)}</div>`
                     }
                 </div>
                 
@@ -2528,7 +2603,26 @@ function openAddProductModal() {
             if (exclusiveProducts.length > 0) {
                 exclusiveList.innerHTML = exclusiveProducts.map(product => {
                     const productId = product.id ? String(product.id).replace(/'/g, "\\'") : '';
-                    const precio = product.precio ? Number(product.precio).toFixed(2) : '0.00';
+                    // Obtener precio: si tiene price_tiers, usar el precio del primer tier, sino usar precio base
+                    let precio = product.precio || 0;
+                    let precioOriginal = null; // Guardar el precio original como string para preservar decimales
+                    if (product.price_tiers && Array.isArray(product.price_tiers) && product.price_tiers.length > 0) {
+                        const sortedTiers = [...product.price_tiers].sort((a, b) => {
+                            const minA = a?.min_qty !== null && a?.min_qty !== undefined ? Number(a.min_qty) : 0;
+                            const minB = b?.min_qty !== null && b?.min_qty !== undefined ? Number(b.min_qty) : 0;
+                            return minA - minB;
+                        });
+                        const firstTier = sortedTiers[0];
+                        if (firstTier && firstTier.price !== null && firstTier.price !== undefined) {
+                            // Guardar el precio original como string para preservar decimales
+                            precioOriginal = String(firstTier.price);
+                            precio = Number(firstTier.price);
+                        }
+                    } else {
+                        // Si no hay price_tiers, usar el precio base como string
+                        precioOriginal = String(product.precio || 0);
+                    }
+                    const precioFormateado = window.cartManager ? window.cartManager.formatUnitPrice(precioOriginal || precio) : precio.toFixed(2);
                     return `
                         <div class="product-search-item" onclick="window.selectProduct('${productId}')" style="cursor: pointer; background: var(--bg-white); border: 1px solid var(--brand-gold, #C6A15B);">
                             ${product.foto ? 
@@ -2540,7 +2634,7 @@ function openAddProductModal() {
                             <div class="product-search-item-info">
                                 <h4 class="product-search-item-name">${product.nombre}</h4>
                                 <p class="product-search-item-ref">Ref: ${product.id || product.referencia} | ${product.marca || 'Sin marca'}</p>
-                                <span style="font-weight: 700; color: var(--brand-gold, #C6A15B); font-size: 0.95rem;">${precio} €</span>
+                                <span style="font-weight: 700; color: var(--brand-gold, #C6A15B); font-size: 0.95rem;">${precioFormateado} €</span>
                             </div>
                         </div>
                     `;
@@ -2729,7 +2823,26 @@ async function loadExclusiveProducts(clienteNombre) {
         const resultsHTML = normalizedProducts.map(product => {
             const categoryName = window.cartManager ? window.cartManager.getCategoryName(product.categoria) : product.categoria;
             const productId = product.id ? String(product.id).replace(/'/g, "\\'") : '';
-            const precio = product.precio ? Number(product.precio).toFixed(2) : '0.00';
+            // Obtener precio: si tiene price_tiers, usar el precio del primer tier, sino usar precio base
+            let precio = product.precio || 0;
+            let precioOriginal = null; // Guardar el precio original como string para preservar decimales
+            if (product.price_tiers && Array.isArray(product.price_tiers) && product.price_tiers.length > 0) {
+                const sortedTiers = [...product.price_tiers].sort((a, b) => {
+                    const minA = a?.min_qty !== null && a?.min_qty !== undefined ? Number(a.min_qty) : 0;
+                    const minB = b?.min_qty !== null && b?.min_qty !== undefined ? Number(b.min_qty) : 0;
+                    return minA - minB;
+                });
+                const firstTier = sortedTiers[0];
+                if (firstTier && firstTier.price !== null && firstTier.price !== undefined) {
+                    // Guardar el precio original como string para preservar decimales
+                    precioOriginal = String(firstTier.price);
+                    precio = Number(firstTier.price);
+                }
+            } else {
+                // Si no hay price_tiers, usar el precio base como string
+                precioOriginal = String(product.precio || 0);
+            }
+            const precioFormateado = window.cartManager ? window.cartManager.formatUnitPrice(precioOriginal || precio) : precio.toFixed(2);
             const plazoEntrega = product.plazo_entrega || product.plazoEntrega || '';
             return `
                 <div class="product-search-item" onclick="window.selectExclusiveProduct('${productId}')" style="cursor: pointer; background: var(--bg-white); border: 2px solid var(--brand-gold, #C6A15B); border-radius: var(--radius-md); margin-bottom: var(--space-2); padding: var(--space-3);">
@@ -2744,7 +2857,7 @@ async function loadExclusiveProducts(clienteNombre) {
                         <p class="product-search-item-ref">Ref: ${product.id || product.referencia} | ${product.marca || 'Sin marca'}</p>
                         <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
                             <span class="product-search-item-category">${categoryName}</span>
-                            <span style="font-weight: 700; color: var(--brand-gold, #C6A15B); font-size: 0.95rem;">${precio} €</span>
+                            <span style="font-weight: 700; color: var(--brand-gold, #C6A15B); font-size: 0.95rem;">${precioFormateado} €</span>
                             ${plazoEntrega ? `<span style="font-size: 0.8rem; color: var(--text-secondary, #6b7280); background: var(--bg-gray-100, #f3f4f6); padding: 2px 8px; border-radius: 4px;"><i class="fas fa-truck" style="margin-right: 4px;"></i>${plazoEntrega}</span>` : ''}
                         </div>
                     </div>
@@ -3080,7 +3193,26 @@ function handleProductSearch(e) {
         const resultsHTML = filteredProducts.map(product => {
             const categoryNames = getCategoryNames(product);
             const productId = product.id ? String(product.id).replace(/'/g, "\\'") : '';
-            const precio = product.precio ? Number(product.precio).toFixed(2) : '0.00';
+            // Obtener precio: si tiene price_tiers, usar el precio del primer tier, sino usar precio base
+            let precio = product.precio || 0;
+            let precioOriginal = null; // Guardar el precio original como string para preservar decimales
+            if (product.price_tiers && Array.isArray(product.price_tiers) && product.price_tiers.length > 0) {
+                const sortedTiers = [...product.price_tiers].sort((a, b) => {
+                    const minA = a?.min_qty !== null && a?.min_qty !== undefined ? Number(a.min_qty) : 0;
+                    const minB = b?.min_qty !== null && b?.min_qty !== undefined ? Number(b.min_qty) : 0;
+                    return minA - minB;
+                });
+                const firstTier = sortedTiers[0];
+                if (firstTier && firstTier.price !== null && firstTier.price !== undefined) {
+                    // Guardar el precio original como string para preservar decimales
+                    precioOriginal = String(firstTier.price);
+                    precio = Number(firstTier.price);
+                }
+            } else {
+                // Si no hay price_tiers, usar el precio base como string
+                precioOriginal = String(product.precio || 0);
+            }
+            const precioFormateado = window.cartManager ? window.cartManager.formatUnitPrice(precioOriginal || precio) : precio.toFixed(2);
             const plazoEntrega = product.plazo_entrega || product.plazoEntrega || '';
             
             // Mostrar ambos idiomas si ambos están disponibles
@@ -3114,7 +3246,7 @@ function handleProductSearch(e) {
                         <p class="product-search-item-ref">Ref: ${product.id || product.referencia} | ${product.marca || 'Sin marca'}</p>
                         <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
                         <span class="product-search-item-category">${categoryDisplay}</span>
-                            <span style="font-weight: 700; color: var(--accent-500, #f59e0b); font-size: 0.95rem;">${precio} €</span>
+                            <span style="font-weight: 700; color: var(--accent-500, #f59e0b); font-size: 0.95rem;">${precioFormateado} €</span>
                             ${plazoEntrega ? `<span style="font-size: 0.8rem; color: var(--text-secondary, #6b7280); background: var(--bg-gray-100, #f3f4f6); padding: 2px 8px; border-radius: 4px;"><i class="fas fa-truck" style="margin-right: 4px;"></i>${plazoEntrega}</span>` : ''}
                         </div>
                     </div>
@@ -3427,7 +3559,7 @@ function updatePriceOnQuantityChange(itemId, quantity) {
                     priceElement.style.fontWeight = '600';
                 } else {
                     // Mostrar precio unitario
-                    priceElement.textContent = `€${newPrice.toFixed(2)}`;
+                    priceElement.textContent = `€${window.cartManager.formatUnitPrice(newPrice)}`;
                     priceElement.style.color = '';
                     priceElement.style.fontWeight = '';
                 }
@@ -4786,11 +4918,12 @@ async function generateProposalPDFFromSavedProposal(proposalId, language = 'pt')
         }
 
         // Cargar los artículos de la propuesta
+        // Ordenar por created_at para mantener el orden de inserción original, incluso con productos duplicados
         const { data: articulos, error: articulosError } = await window.cartManager.supabase
             .from('presupuestos_articulos')
             .select('*')
             .eq('presupuesto_id', proposalId)
-            .order('id', { ascending: true });
+            .order('created_at', { ascending: true });
 
         if (articulosError) {
             throw new Error('No se pudieron cargar los artículos desde Supabase');
@@ -6260,8 +6393,12 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
             selectedColorText || '' // Color seleccionado como parámetro adicional, asegurar que no sea undefined
         );
         drawCell(colPositions.quantity, currentY, colWidths.quantity, calculatedRowHeight, quantity.toString(), { align: 'center', fontSize: 8, noWrap: true });
-        drawCell(colPositions.unitPrice, currentY, colWidths.unitPrice, calculatedRowHeight, `€${unitPrice.toFixed(2)}`, { align: 'center', fontSize: 8, noWrap: true });
-        drawCell(colPositions.total, currentY, colWidths.total, calculatedRowHeight, `€${total.toFixed(2)}`, { align: 'center', bold: true, fontSize: 8, noWrap: true });
+        // Formatear precio unitario: hasta 4 decimales si tiene 4 decimales significativos
+        const formattedUnitPrice = window.cartManager ? window.cartManager.formatUnitPrice(unitPrice) : unitPrice.toFixed(2);
+        drawCell(colPositions.unitPrice, currentY, colWidths.unitPrice, calculatedRowHeight, `€${formattedUnitPrice}`, { align: 'center', fontSize: 8, noWrap: true });
+        // Formatear total: siempre 2 decimales
+        const formattedTotal = window.cartManager ? window.cartManager.formatTotal(total) : total.toFixed(2);
+        drawCell(colPositions.total, currentY, colWidths.total, calculatedRowHeight, `€${formattedTotal}`, { align: 'center', bold: true, fontSize: 8, noWrap: true });
         drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, calculatedRowHeight, deliveryText, { align: 'center', fontSize: 7 });
         
         // Dibujar logo si existe
@@ -6404,8 +6541,9 @@ async function generateProposalPDF(selectedLanguage = null, proposalData = null)
     // Celda combinada (nombre hasta precio unitario)
     drawCell(colPositions.name, currentY, combinedCellWidth, baseRowHeight, t.totalProposal, { align: 'center', bold: true, fontSize: 9, textColor: whiteColor, border: true });
     
-    // Celda del total
-    drawCell(colPositions.total, currentY, colWidths.total, baseRowHeight, `€${totalProposal.toFixed(2)}`, { align: 'center', bold: true, fontSize: 9, noWrap: true, textColor: whiteColor, border: true });
+    // Celda del total - siempre 2 decimales
+    const formattedTotalProposal = window.cartManager ? window.cartManager.formatTotal(totalProposal) : totalProposal.toFixed(2);
+    drawCell(colPositions.total, currentY, colWidths.total, baseRowHeight, `€${formattedTotalProposal}`, { align: 'center', bold: true, fontSize: 9, noWrap: true, textColor: whiteColor, border: true });
     
     // Celda de plazo de entrega (vacía en la fila del total)
     drawCell(colPositions.deliveryTime, currentY, colWidths.deliveryTime, baseRowHeight, '', { align: 'center', border: true, textColor: whiteColor });

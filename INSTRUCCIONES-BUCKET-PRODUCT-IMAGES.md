@@ -122,3 +122,5 @@ Después de crear el bucket y configurar las políticas:
 *   Revisa la consola del navegador para errores de CORS o de carga de imágenes.
 
 
+
+
