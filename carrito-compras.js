@@ -430,12 +430,24 @@ class CartManager {
                     plazoEntrega: articulo.plazo_entrega || product.plazoEntrega || product.plazo_entrega || '',
                     price_tiers: product.price_tiers || [],
                     variants: product.variants || [],
-                    selectedVariant: (articulo.tipo_personalizacion && 
-                                     articulo.tipo_personalizacion !== 'Sin personalización' && 
-                                     articulo.tipo_personalizacion !== 'Sem personalização' && 
-                                     articulo.tipo_personalizacion !== 'No customization' &&
-                                     product.variants && 
-                                     product.variants.length > 0) ? 0 : null,
+                    selectedVariant: (() => {
+                        // Buscar la variante correcta por su nombre (tipo_personalizacion)
+                        if (articulo.tipo_personalizacion && 
+                            articulo.tipo_personalizacion !== 'Sin personalización' && 
+                            articulo.tipo_personalizacion !== 'Sem personalização' && 
+                            articulo.tipo_personalizacion !== 'No customization' &&
+                            product.variants && 
+                            product.variants.length > 0) {
+                            // Buscar el índice de la variante que coincida con el nombre guardado
+                            const variantIndex = product.variants.findIndex(variant => 
+                                variant.name === articulo.tipo_personalizacion ||
+                                variant.nombre === articulo.tipo_personalizacion
+                            );
+                            // Si se encuentra, devolver el índice; si no, devolver null
+                            return variantIndex >= 0 ? variantIndex : null;
+                        }
+                        return null;
+                    })(),
                     variantes_referencias: product.variantes_referencias || [],
                     selectedReferenceVariant: (articulo.variante_referencia !== null && articulo.variante_referencia !== undefined) 
                         ? parseInt(articulo.variante_referencia) 
@@ -4968,12 +4980,24 @@ async function generateProposalPDFFromSavedProposal(proposalId, language = 'pt')
                     descripcionPt: product.descripcionPt || '',
                     price_tiers: product.price_tiers || [],
                     variants: product.variants || [],
-                    selectedVariant: (articulo.tipo_personalizacion && 
-                                     articulo.tipo_personalizacion !== 'Sin personalización' && 
-                                     articulo.tipo_personalizacion !== 'Sem personalização' && 
-                                     articulo.tipo_personalizacion !== 'No customization' &&
-                                     product.variants && 
-                                     product.variants.length > 0) ? 0 : null,
+                    selectedVariant: (() => {
+                        // Buscar la variante correcta por su nombre (tipo_personalizacion)
+                        if (articulo.tipo_personalizacion && 
+                            articulo.tipo_personalizacion !== 'Sin personalización' && 
+                            articulo.tipo_personalizacion !== 'Sem personalização' && 
+                            articulo.tipo_personalizacion !== 'No customization' &&
+                            product.variants && 
+                            product.variants.length > 0) {
+                            // Buscar el índice de la variante que coincida con el nombre guardado
+                            const variantIndex = product.variants.findIndex(variant => 
+                                variant.name === articulo.tipo_personalizacion ||
+                                variant.nombre === articulo.tipo_personalizacion
+                            );
+                            // Si se encuentra, devolver el índice; si no, devolver null
+                            return variantIndex >= 0 ? variantIndex : null;
+                        }
+                        return null;
+                    })(),
                     selectedReferenceVariant: selectedReferenceVariant, // Color seleccionado
                     variantes_referencias: variantesReferencias, // Variantes de referencia del producto
                     logoUrl: articulo.logo_url || null
